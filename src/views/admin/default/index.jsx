@@ -27,6 +27,8 @@ import {
   MdStore,
   MdShoppingCart,
   MdAssignment,
+  MdCalendarToday,
+  MdProductionQuantityLimits
 } from "react-icons/md";
 import { getRevenue } from "services/statisticalService";
 import { formatCurrency } from "utils/formatCurrency";
@@ -146,7 +148,7 @@ export default function UserReports() {
               icon={<Icon w="32px" h="32px" as={MdStore} color={brandColor} />}
             />
           }
-          name="Tổng đối tác"
+          name="Tổng cửa hàng"
           value={statistics.staffCount}
         />
         <MiniStatistics
@@ -159,14 +161,14 @@ export default function UserReports() {
                 <Icon
                   w="32px"
                   h="32px"
-                  as={MdShoppingCart}
+                  as={MdCalendarToday}
                   color={brandColor}
                 />
               }
             />
           }
           name="Tổng đơn đặt lịch"
-          value={statistics.totalBooking}
+          value={125}
         />
         <MiniStatistics
           startContent={
@@ -180,7 +182,7 @@ export default function UserReports() {
             />
           }
           name="Tổng dịch vụ"
-          value={statistics.totalService}
+          value={105}
         />
         <MiniStatistics
           startContent={
@@ -189,29 +191,14 @@ export default function UserReports() {
               h="56px"
               bg={boxBg}
               icon={
-                <Icon w="32px" h="32px" as={MdAttachMoney} color={brandColor} />
+                <Icon w="32px" h="32px" as={MdPeople} color={brandColor} />
               }
             />
           }
-          name="Doanh thu hôm nay"
-          value={formatCurrency(statistics.revenueToday)}
-          growth={statistics.todayGrowth?.toFixed(2) || 0}
-          content="so với hôm qua"
-        />
-        <MiniStatistics
-          startContent={
-            <IconBox
-              w="56px"
-              h="56px"
-              bg={boxBg}
-              icon={
-                <Icon w="32px" h="32px" as={MdAttachMoney} color={brandColor} />
-              }
-            />
-          }
-          name="Doanh thu tháng này"
-          value={formatCurrency(statistics.revenueThisMonth)}
-          growth={statistics.monthGrowth?.toFixed(2) || 0}
+          name="Khách hàng mới"
+          unit="người"
+          value={67}
+          growth={80}
           content="so với tháng trước"
         />
         <MiniStatistics
@@ -221,16 +208,34 @@ export default function UserReports() {
               h="56px"
               bg={boxBg}
               icon={
-                <Icon w="32px" h="32px" as={MdAttachMoney} color={brandColor} />
+                <Icon w="32px" h="32px" as={MdStore} color={brandColor} />
               }
             />
           }
-          name="Doanh thu năm nay"
-          value={formatCurrency(statistics.revenueThisYear)}
-          growth={statistics.yearGrowth?.toFixed(2) || 0}
-          content="so với năm trước"
+          name="Cửa hàng mới"
+          unit="cửa hàng"
+          value={51}
+          growth={75}
+          content="so với tháng trước"
         />
-        <MiniStaticsDiscount
+        <MiniStatistics
+          startContent={
+            <IconBox
+              w="56px"
+              h="56px"
+              bg={boxBg}
+              icon={
+                <Icon w="32px" h="32px" as={MdCalendarToday} color={brandColor} />
+              }
+            />
+          }
+          name="Đơn đặt lịch mới"
+          unit="đơn"
+          value={45}
+          growth={98}
+          content="so với tháng trước"
+        />
+        <MiniStatistics
           startContent={
             <IconBox
               w="56px"
@@ -241,11 +246,11 @@ export default function UserReports() {
               }
             />
           }
-          name="Thông tin chiết khấu"
-          content="so với hôm qua"
-          discountToday={formatCurrency(statistics.discountToday)}
-          discountThisMonth={formatCurrency(statistics.discountThisMonth)}
-          discountThisYear={formatCurrency(statistics.discountThisYear)}
+          name="Dịch vụ mới"
+          unit="dịch vụ"
+          value={35}
+          growth={-17}
+          content="so với tháng trước"
         />
       </SimpleGrid>
 

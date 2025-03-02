@@ -69,7 +69,7 @@ const BookingDetailModal = ({
           const staffList = await getAllStaff();
           setStaffOptions(staffList);
         } catch (error) {
-          // message.error("Không thể tải danh sách nhân viên.");
+          message.error("Không thể tải danh sách nhân viên.");
         }
       };
       fetchStaff();
@@ -116,7 +116,7 @@ const BookingDetailModal = ({
         <Descriptions.Item label="Dịch vụ">
           {booking.serviceId?.serviceName}
         </Descriptions.Item>
-        {/* <Descriptions.Item label="Nhân viên">
+        <Descriptions.Item label="Nhân viên">
           <Select
             defaultValue={booking.preferredStaffId?.name || "Không yêu cầu"}
             style={{ width: "100%" }}
@@ -129,7 +129,7 @@ const BookingDetailModal = ({
               </Option>
             ))}
           </Select>
-        </Descriptions.Item> */}
+        </Descriptions.Item>
         <Descriptions.Item label="Thời gian">
           {new Date(booking.bookingTime).toLocaleString("vi-VN", {
             hour: "2-digit",

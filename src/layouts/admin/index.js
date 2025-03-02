@@ -25,17 +25,17 @@ export default function Dashboard(props) {
         return [
           "/default",
           "/category",
-          "/service",
+          "/service-admin",
           "/approvel",
-          "/booking",
           "/user",
-          // "/work-schedule-management",
+          "/store-management",
           "/profile",
         ].includes(route.path);
-      } else if (userRole === "suplier") {
+      } else if (userRole === "supplier") {
         return [
           "/booking",
-          "/service",
+          "/store-management",
+          "/service-store",
           "/default",
           "/profile",
         ].includes(route.path);

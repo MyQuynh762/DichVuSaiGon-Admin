@@ -7,6 +7,7 @@ import {
   ModalBody,
   ModalCloseButton,
   Button,
+  Text,
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import { Input, Select, message } from "antd";
@@ -14,53 +15,75 @@ import { updateUser } from "services/userService";
 import { getAllServices } from "services/serviceService";
 
 export default function EditUserModal({ isOpen, onClose, user, fetchUsers }) {
-  const [userData, setUserData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    address: user?.address || "Hà Nội",
-    role: user?.role || "customer",
-    age: user?.age || "",
-    serviceIds: user?.serviceIds || [],
-    discountPercentage: user?.discountPercentage || 0, // Initialize discountPercentage
+  const [newUser, setNewUser] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    address: "",
+    role: "",
+    businessLicense: "",
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [services, setServices] = useState([]);
 
-  // Initialize userData when user changes
+  // Cập nhật dữ liệu khi `user` thay đổi
   useEffect(() => {
-    setUserData({
-      name: user?.name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      address: user?.address || "Hà Nội",
-      role: user?.role || "customer",
-      age: user?.age || "",
-      serviceIds: user?.serviceIds || [],
-      discountPercentage: user?.discountPercentage || 0,
-    });
+    if (user) {
+      setNewUser({
+        fullName: user?.fullName || "",
+        email: user?.email || "",
+        phone: user?.phone || "",
+        address: user?.address || "",
+        role: user?.role || "",
+        businessLicense: user?.businessLicense || "",
+      });
+      setErrors({});
+    }
   }, [user]);
 
-  // Fetch services if role is "staff"
-  useEffect(() => {
-    if (userData.role === "staff") {
-      (async () => {
-        const servicesData = await getAllServices(1, 100);
-        setServices(servicesData.services || []);
-      })();
+  // Hàm kiểm tra dữ liệu hợp lệ
+  const validateFields = () => {
+    const { fullName, email, phone, address, role } = newUser;
+    const newErrors = {};
+
+    if (!fullName.trim()) {
+      newErrors.fullName = "Tên người dùng không được để trống.";
     }
-  }, [userData.role]);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      newErrors.email = "Email không được để trống.";
+    } else if (!emailRegex.test(email)) {
+      newErrors.email = "Email không hợp lệ.";
+    }
+
+    if (!phone.trim()) {
+      newErrors.phone = "Số điện thoại không được để trống.";
+    } else {
+      const phoneRegex = /^\d{9,11}$/;
+      if (!phoneRegex.test(phone)) {
+        newErrors.phone = "Số điện thoại không hợp lệ (9-11 chữ số).";
+      }
+    }
+
+    if (!address.trim()) {
+      newErrors.address = "Địa chỉ không được để trống.";
+    }
+
+    if (!role.trim()) {
+      newErrors.role = "Vai trò không được để trống.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async () => {
-    setLoading(true);
-    if (!userData.name || !userData.email) {
-      message.warning("Vui lòng nhập đầy đủ thông tin bắt buộc.");
-      setLoading(false);
-      return;
-    }
+    if (!validateFields()) return;
 
+    setLoading(true);
     try {
-      const response = await updateUser(user._id, userData);
+      const response = await updateUser(user._id, newUser);
       if (response) {
         message.success("Cập nhật người dùng thành công.");
         onClose();
@@ -75,6 +98,11 @@ export default function EditUserModal({ isOpen, onClose, user, fetchUsers }) {
     }
   };
 
+  const handleChange = (field, value) => {
+    setNewUser({ ...newUser, [field]: value });
+    setErrors({ ...errors, [field]: "" });
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
@@ -84,139 +112,82 @@ export default function EditUserModal({ isOpen, onClose, user, fetchUsers }) {
         <ModalBody>
           {/* Tên Người Dùng */}
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Tên Người Dùng:
             </label>
             <Input
               allowClear
               placeholder="Nhập tên người dùng"
-              value={userData.name}
-              onChange={(e) =>
-                setUserData({ ...userData, name: e.target.value })
-              }
+              value={newUser.fullName}
+              onChange={(e) => handleChange("fullName", e.target.value)}
               style={{ height: "40px" }}
             />
+            {errors.fullName && <Text color="red.500">{errors.fullName}</Text>}
           </div>
 
-          {/* Email */}
+          {/* Email (disabled) */}
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Email:
             </label>
             <Input
               allowClear
               placeholder="Nhập email"
-              value={userData.email}
-              onChange={(e) =>
-                setUserData({ ...userData, email: e.target.value })
-              }
+              value={newUser.email}
+              onChange={(e) => handleChange("email", e.target.value)}
               style={{ height: "40px" }}
               disabled
             />
+            {errors.email && <Text color="red.500">{errors.email}</Text>}
           </div>
 
           {/* Số Điện Thoại */}
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Số Điện Thoại:
             </label>
             <Input
               allowClear
               placeholder="Nhập số điện thoại"
-              value={userData.phone}
-              onChange={(e) =>
-                setUserData({ ...userData, phone: e.target.value })
-              }
+              value={newUser.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
               style={{ height: "40px" }}
             />
+            {errors.phone && <Text color="red.500">{errors.phone}</Text>}
           </div>
 
           {/* Địa Chỉ */}
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Địa Chỉ:
             </label>
-            <Select
-              value={userData.address}
-              onChange={(value) => setUserData({ ...userData, address: value })}
-              style={{ width: "100%", height: "40px" }}
-              disabled
-              getPopupContainer={(triggerNode) => triggerNode.parentNode}
-            >
-              <Select.Option value="Hà Nội">Hà Nội</Select.Option>
-              <Select.Option value="Đà Nẵng">Đà Nẵng</Select.Option>
-              <Select.Option value="Thành phố Hồ Chí Minh">
-                Thành phố Hồ Chí Minh
-              </Select.Option>
-            </Select>
+            <Input
+              allowClear
+              placeholder="Nhập địa chỉ"
+              value={newUser.address}
+              onChange={(e) => handleChange("address", e.target.value)}
+              style={{ height: "40px" }}
+            />
+            {errors.address && <Text color="red.500">{errors.address}</Text>}
           </div>
 
           {/* Vai Trò */}
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Vai Trò:
             </label>
             <Select
-              value={userData.role}
-              onChange={(value) =>
-                setUserData({
-                  ...userData,
-                  role: value,
-                  serviceIds: value === "staff" ? userData.serviceIds : [],
-                })
-              }
+              value={newUser.role}
+              onChange={(value) => handleChange("role", value)}
               style={{ width: "100%", height: "40px" }}
               getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
-              <Select.Option value="customer">Customer</Select.Option>
-              <Select.Option value="admin">Admin</Select.Option>
-              <Select.Option value="suplier">Suplier</Select.Option>
+              <Select.Option value="customer">Khách hàng</Select.Option>
+              <Select.Option value="admin">Quản trị viên</Select.Option>
+              <Select.Option value="supplier">Nhà cung cấp (Quản lý cửa hàng)</Select.Option>
             </Select>
+            {errors.role && <Text color="red.500">{errors.role}</Text>}
           </div>
-
-          {/* Dịch Vụ (chỉ hiển thị nếu vai trò là staff) */}
-          {userData.role === "staff" && (
-            <div style={{ marginBottom: 16 }}>
-              <label
-                style={{
-                  fontWeight: "bold",
-                  display: "block",
-                  marginBottom: 8,
-                }}
-              >
-                Dịch Vụ:
-              </label>
-              <Select
-                mode="multiple"
-                placeholder="Chọn dịch vụ"
-                value={userData.serviceIds}
-                onChange={(value) =>
-                  setUserData({ ...userData, serviceIds: value })
-                }
-                style={{ width: "100%" }}
-                getPopupContainer={(triggerNode) => triggerNode.parentNode}
-              >
-                {services.map((service) => (
-                  <Select.Option key={service._id} value={service._id}>
-                    {service.serviceName}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
-          )}
-
-          {/* Tuổi */}
-         
         </ModalBody>
         <ModalFooter>
           <Button

@@ -24,72 +24,7 @@ import EditUserModal from "./components/EditUserModal";
 import CreateUserModal from "./components/CreateUserModal";
 
 export default function UserManagement() {
-  const users = [
-    {
-      "_id": "6722eed20456055add9b925c",
-      "name": "Nguyễn Văn A",
-      "email": "nguyenvana@gmail.com",
-      "phone": "0987654123",
-      "address": "Hồ Chí Minh",
-      "role": "admin",
-      "serviceIds": [],
-      "active": true,
-      "__v": 0,
-      "age": 20,
-      "discountPercentage": 0,
-      "resetPasswordExpires": "2024-12-14T08:18:52.966Z",
-      "resetPasswordToken": "$2b$10$QxXeDjXdXxWT1jLliX.MauqxuUKvxOQt.olQmKmmEMTYoXsVdGQiy"
-    },
-    {
-      "_id": "6723a0483a7c3bc4959e239e",
-      "name": "Nguyễn Văn B",
-      "email": "nguyenvanb@gmail.com",
-      "phone": "0967626483",
-      "address": "Hồ Chí Minh",
-      "role": "suplier",
-      "active": true,
-      "__v": 2,
-      "age": 22,
-      "discountPercentage": 0,
-      "serviceIds": []
-    },
-    {
-      "_id": "6730a75016f4977acb4a5423",
-      "name": "Nguyễn Văn C",
-      "email": "nguyenvanc@gmail.com",
-      "phone": "0977485985",
-      "address": "Hồ Chí Minh",
-      "role": "customer",
-      "serviceIds": [],
-      "active": true,
-      "discountPercentage": 0,
-      "__v": 0
-    },
-    {
-      "_id": "6725b67af2abf0bc4b85db55",
-      "name": "Nguyễn Văn D",
-      "email": "nguyenvand@gmail.com",
-      "phone": "0914725836",
-      "address": "Hồ Chí Minh",
-      "role": "customer",
-      "serviceIds": [],
-      "active": true,
-      "discountPercentage": 0,
-      "__v": 0
-    },
-    {
-      "_id": "672308ef5889c57ef43b18cc",
-      "name": "Nguyen Văn E",
-      "email": "nguyenvane@gmail.com",
-      "phone": "0335262756",
-      "address": "Hồ Chí Minh",
-      "role": "customer",
-      "serviceIds": [],
-      "active": true,
-      "__v": 0,
-      "discountPercentage": 0
-    }
-  ]
+  const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -113,10 +48,8 @@ export default function UserManagement() {
   const fetchUsers = useCallback(
     async (search = searchTerm, page = currentPage) => {
       setLoading(true);
-      const data = {
-        totalPages: 1
-      };
-      // setUsers(data.users);
+      const data = await getAllUser(page, limit, search);
+      setUsers(data.users);
       setTotalPages(data.totalPages);
       setLoading(false);
     },
@@ -161,7 +94,7 @@ export default function UserManagement() {
     switch (role) {
       case "admin":
         color = "blue";
-        label = "Admin";
+        label = "Quản trị viên";
         break;
       case "staff":
         color = "green";
@@ -171,9 +104,9 @@ export default function UserManagement() {
         color = "orange";
         label = "Customer";
         break;
-      case "suplier":
+      case "supplier":
         color = "purple";
-        label = "Suplier";
+        label = "Nhà cung cấp (Quản lý cửa hàng)";
         break;
       default:
         color = "gray";
@@ -186,8 +119,8 @@ export default function UserManagement() {
   const columns = [
     {
       title: "Tên Người Dùng",
-      dataIndex: "name",
-      key: "name",
+      dataIndex: "fullName",  // ✅ Đổi từ "name" → "fullName"
+      key: "fullName",
     },
     {
       title: "Email",
@@ -200,11 +133,6 @@ export default function UserManagement() {
       key: "phone",
     },
     {
-      title: "Địa Chỉ",
-      dataIndex: "address",
-      key: "address",
-    },
-    {
       title: "Vai Trò",
       dataIndex: "role",
       key: "role",
@@ -212,7 +140,7 @@ export default function UserManagement() {
     },
     {
       title: "Trạng Thái",
-      dataIndex: "active",
+      dataIndex: "active", // ✅ Sửa từ "isDelete" thành "active"
       key: "active",
       render: (active) => (
         <span style={{ color: active ? "green" : "red", fontWeight: "bold" }}>
@@ -265,6 +193,7 @@ export default function UserManagement() {
       ),
     },
   ];
+
 
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }} w="100%">

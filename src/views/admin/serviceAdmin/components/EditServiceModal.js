@@ -10,30 +10,30 @@ import {
   Text,
 } from "@chakra-ui/react";
 import React, { useState, useEffect } from "react";
-import { Input, message, Upload, Select } from "antd";
+import { Input, Select, Switch, Upload, message } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import "react-quill/dist/quill.snow.css";
 import { updateService } from "services/serviceService";
 import { getAllCategories } from "services/categoryService";
+import { getAllStores } from "services/storeService";
 import ReactQuill from "react-quill";
 
-export default function EditServiceModal({
-  isOpen,
-  onClose,
-  serviceData,
-  fetchServices,
-}) {
+const { TextArea } = Input;
+
+export default function EditServiceModal({ isOpen, onClose, serviceData, fetchServices }) {
   const [editService, setEditService] = useState({
-    serviceName: "",
+    title: "",
     categoryId: "",
     shortDescription: "",
     fullDescription: "",
-    basePrice: "",
-    address: "",
+    avgPrice: "",
+    availableForBooking: false,
     images: [],
-    tasks: [],
+    storeIds: [],
   });
+
   const [categories, setCategories] = useState([]);
+  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -42,87 +42,48 @@ export default function EditServiceModal({
       const data = await getAllCategories();
       setCategories(data.categories || []);
     };
-    fetchCategories();
 
+    const fetchStores = async () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const adminId = user ? user.user._id : null;
+      const response = await getAllStores(1, 1000, "", adminId);
+      setStores(response.stores || []);
+    };
+
+    fetchCategories();
+    fetchStores();
+  }, []);
+
+  useEffect(() => {
     if (serviceData) {
       setEditService({
-        serviceName: serviceData.serviceName,
-        categoryId: serviceData.categoryId._id,
+        title: serviceData.title,
+        categoryId: serviceData.categoryId?._id || "",
         shortDescription: serviceData.shortDescription,
         fullDescription: serviceData.fullDescription,
-        basePrice: serviceData.basePrice,
-        address: serviceData.address,
-        images: serviceData.images.map((url, index) => ({
-          uid: index,
-          url,
-        })),
-        tasks: serviceData.tasks,
+        avgPrice: serviceData.avgPrice,
+        availableForBooking: serviceData.availableForBooking || false,
+        images: serviceData.serviceImages.map((url, index) => ({ uid: index, url })),
+        storeIds: serviceData.storeIds || [],
       });
     }
   }, [serviceData]);
 
   const handleFileChange = ({ fileList }) => {
     setEditService({ ...editService, images: fileList });
-  };
-
-  const handleAddTask = () => {
-    setEditService({
-      ...editService,
-      tasks: [...editService.tasks, { title: "", taskList: [] }],
-    });
-  };
-
-  const handleRemoveTask = (index) => {
-    const updatedTasks = editService.tasks.filter((_, i) => i !== index);
-    setEditService({ ...editService, tasks: updatedTasks });
-  };
-
-  const handleTaskChange = (index, field, value) => {
-    const updatedTasks = [...editService.tasks];
-    updatedTasks[index][field] = value;
-    setEditService({ ...editService, tasks: updatedTasks });
-  };
-
-  const handleAddTaskItem = (taskIndex) => {
-    const updatedTasks = [...editService.tasks];
-    if (!Array.isArray(updatedTasks[taskIndex].taskList)) {
-      updatedTasks[taskIndex].taskList = [];
-    }
-    updatedTasks[taskIndex].taskList.push("");
-    setEditService({ ...editService, tasks: updatedTasks });
-  };
-
-  const handleRemoveTaskItem = (taskIndex, itemIndex) => {
-    const updatedTasks = [...editService.tasks];
-    if (Array.isArray(updatedTasks[taskIndex].taskList)) {
-      updatedTasks[taskIndex].taskList.splice(itemIndex, 1);
-    }
-    setEditService({ ...editService, tasks: updatedTasks });
-  };
-
-  const handleTaskItemChange = (taskIndex, itemIndex, value) => {
-    const updatedTasks = [...editService.tasks];
-    if (Array.isArray(updatedTasks[taskIndex].taskList)) {
-      updatedTasks[taskIndex].taskList[itemIndex] = value;
-    }
-    setEditService({ ...editService, tasks: updatedTasks });
+    setErrors({ ...errors, images: "" });
   };
 
   const validateFields = () => {
     const newErrors = {};
-    if (!editService.serviceName)
-      newErrors.serviceName = "Vui lòng nhập tên dịch vụ.";
-    if (!editService.categoryId)
-      newErrors.categoryId = "Vui lòng chọn danh mục.";
-    if (!editService.shortDescription)
-      newErrors.shortDescription = "Vui lòng nhập mô tả ngắn.";
-    if (!editService.fullDescription)
-      newErrors.fullDescription = "Vui lòng nhập mô tả chi tiết.";
-    if (!editService.basePrice)
-      newErrors.basePrice = "Vui lòng nhập giá cơ bản.";
-    if (!editService.address) newErrors.address = "Vui lòng chọn địa chỉ.";
-    if (!editService.images.length)
-      newErrors.images = "Vui lòng tải lên ít nhất một hình ảnh.";
+
+    if (!editService.title) newErrors.title = "Vui lòng nhập tên dịch vụ.";
+    if (!editService.categoryId) newErrors.categoryId = "Vui lòng chọn danh mục.";
+    if (!editService.shortDescription) newErrors.shortDescription = "Vui lòng nhập mô tả ngắn.";
+    if (!editService.fullDescription) newErrors.fullDescription = "Vui lòng nhập mô tả chi tiết.";
+    if (!editService.avgPrice) newErrors.avgPrice = "Vui lòng nhập giá.";
+    if (!editService.images.length) newErrors.images = "Vui lòng tải lên ít nhất một hình ảnh.";
+    if (!editService.storeIds.length) newErrors.storeIds = "Vui lòng chọn cửa hàng.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -130,16 +91,16 @@ export default function EditServiceModal({
 
   const handleSubmit = async () => {
     if (!validateFields()) return;
-
     setLoading(true);
 
     const formData = new FormData();
-    formData.append("serviceName", editService.serviceName);
+    formData.append("title", editService.title);
     formData.append("categoryId", editService.categoryId);
     formData.append("shortDescription", editService.shortDescription);
     formData.append("fullDescription", editService.fullDescription);
-    formData.append("basePrice", editService.basePrice);
-    formData.append("address", editService.address);
+    formData.append("avgPrice", editService.avgPrice);
+    formData.append("availableForBooking", editService.availableForBooking);
+
     editService.images.forEach((file) => {
       if (file.originFileObj) {
         formData.append("images", file.originFileObj);
@@ -148,7 +109,10 @@ export default function EditServiceModal({
       }
     });
 
-    formData.append("tasks", JSON.stringify(editService.tasks));
+    editService.storeIds.forEach((storeId) => {
+      formData.append("storeIds", storeId);
+    });
+
 
     try {
       const response = await updateService(serviceData._id, formData);
@@ -165,13 +129,12 @@ export default function EditServiceModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Chỉnh sửa Dịch vụ</ModalHeader>
+        <ModalHeader>Chỉnh sửa dịch vụ</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          {/* Tên dịch vụ */}
           <div style={{ marginBottom: 16 }}>
             <label
               style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
@@ -180,20 +143,19 @@ export default function EditServiceModal({
             </label>
             <Input
               placeholder="Nhập tên dịch vụ"
-              value={editService.serviceName}
+              value={editService.title}
               onChange={(e) =>
-                setEditService({ ...editService, serviceName: e.target.value })
+                setEditService({ ...editService, title: e.target.value })
               }
               style={{ height: "40px" }}
             />
-            {errors.serviceName && (
+            {errors.title && (
               <Text color="red.500" fontSize="sm">
-                {errors.serviceName}
+                {errors.title}
               </Text>
             )}
           </div>
 
-          {/* Danh mục */}
           <div style={{ marginBottom: 16 }}>
             <label
               style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
@@ -202,34 +164,82 @@ export default function EditServiceModal({
             </label>
             <Select
               placeholder="Chọn danh mục"
-              value={editService.categoryId}
               onChange={(value) =>
                 setEditService({ ...editService, categoryId: value })
               }
               style={{ width: "100%", height: "40px" }}
+              value={editService.categoryId}
               getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
               {categories.map((category) => (
                 <Select.Option key={category._id} value={category._id}>
-                  {category.categoryName}
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <img
+                      src={category.images} // Assuming category.categoryImage contains the image URL
+                      alt={category.categoryName}
+                      style={{
+                        width: "30px", // Resize image to fit nicely
+                        height: "30px",
+                        borderRadius: "50%", // Optional: makes the image circular
+                        marginRight: "10px",
+                      }}
+                    />
+                    <span>{category.categoryName}</span>
+                  </div>
                 </Select.Option>
               ))}
             </Select>
+
             {errors.categoryId && (
               <Text color="red.500" fontSize="sm">
                 {errors.categoryId}
               </Text>
             )}
           </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Cửa hàng:
+            </label>
+            <Select
+              placeholder="Chọn cửa hàng"
+              mode="multiple" // Cho phép chọn nhiều cửa hàng
+              value={editService.storeIds} // Lưu trữ mảng storeIds
+              onChange={(value) => setEditService({ ...editService, storeIds: value })}
+              style={{ width: "100%" }}
+              getPopupContainer={(triggerNode) => triggerNode.parentNode}
+            >
+              {stores.map((store) => (
+                <Select.Option key={store._id} value={store._id}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <img
+                      src={store.storeImages[0]} // Assuming store.storeImages contains the image URL
+                      alt={store.storeName}
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        borderRadius: "50%",
+                        marginRight: "10px",
+                      }}
+                    />
+                    <span>{store.storeName}</span>
+                  </div>
+                </Select.Option>
+              ))}
+            </Select>
+            {errors.storeIds && (
+              <Text color="red.500" fontSize="sm">
+                {errors.storeIds}
+              </Text>
+            )}
+          </div>
 
-          {/* Mô tả ngắn */}
           <div style={{ marginBottom: 16 }}>
             <label
               style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
             >
               Mô tả ngắn:
             </label>
-            <Input
+            <TextArea
               placeholder="Nhập mô tả ngắn"
               value={editService.shortDescription}
               onChange={(e) =>
@@ -238,8 +248,10 @@ export default function EditServiceModal({
                   shortDescription: e.target.value,
                 })
               }
-              style={{ height: "40px" }}
+              autoSize={{ minRows: 2, maxRows: 6 }} // Giới hạn số dòng, tránh re-render liên tục
+              style={{ height: "auto" }} // Đảm bảo chiều cao linh hoạt
             />
+
             {errors.shortDescription && (
               <Text color="red.500" fontSize="sm">
                 {errors.shortDescription}
@@ -247,7 +259,6 @@ export default function EditServiceModal({
             )}
           </div>
 
-          {/* Mô tả chi tiết */}
           <div style={{ marginBottom: 16 }}>
             <label
               style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
@@ -269,31 +280,27 @@ export default function EditServiceModal({
             )}
           </div>
 
-          {/* Giá cơ bản */}
           <div style={{ marginBottom: 16, marginTop: 50 }}>
             <label
               style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
             >
-              Giá cơ bản:
+              Giá dự tính:
             </label>
             <Input
               type="number"
               placeholder="Nhập giá cơ bản"
-              value={editService.basePrice}
+              value={editService.avgPrice}
               onChange={(e) =>
-                setEditService({ ...editService, basePrice: e.target.value })
+                setEditService({ ...editService, avgPrice: e.target.value })
               }
               style={{ height: "40px" }}
             />
-            {errors.basePrice && (
+            {errors.avgPrice && (
               <Text color="red.500" fontSize="sm">
-                {errors.basePrice}
+                {errors.avgPrice}
               </Text>
             )}
           </div>
-
-
-          {/* Hình ảnh */}
           <div style={{ marginBottom: 16 }}>
             <label
               style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
@@ -302,95 +309,35 @@ export default function EditServiceModal({
             </label>
             <Upload
               listType="picture-card"
-              fileList={editService.images}
+              fileList={editService.images} // Sử dụng images từ editService
               onChange={handleFileChange}
               beforeUpload={() => false}
             >
               {editService.images.length < 5 && <PlusOutlined />}
             </Upload>
+
             {errors.images && (
               <Text color="red.500" fontSize="sm">
                 {errors.images}
               </Text>
             )}
           </div>
-
-          {/* Tasks */}
-          <div>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
-              Tasks:
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Có thể đặt lịch:
             </label>
-            <Button onClick={handleAddTask} style={{ marginBottom: "10px" }}>
-              Thêm Task
-            </Button>
-            {editService.tasks.map((task, index) => (
-              <div
-                key={index}
-                style={{
-                  marginBottom: 10,
-                  padding: "10px",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "8px",
-                  }}
-                >
-                  <Input
-                    placeholder="Nhập tiêu đề Task"
-                    value={task.title}
-                    onChange={(e) =>
-                      handleTaskChange(index, "title", e.target.value)
-                    }
-                    style={{ width: "80%", height: "40px" }}
-                  />
-                  <Button
-                    type="text"
-                    danger
-                    onClick={() => handleRemoveTask(index)}
-                  >
-                    <DeleteOutlined />
-                  </Button>
-                </div>
-
-                {task.taskList.map((taskItem, itemIndex) => (
-                  <div
-                    key={itemIndex}
-                    style={{ display: "flex", marginBottom: "8px" }}
-                  >
-                    <Input
-                      placeholder="Nhập công việc"
-                      value={taskItem}
-                      onChange={(e) =>
-                        handleTaskItemChange(index, itemIndex, e.target.value)
-                      }
-                      style={{ width: "85%", height: "40px" }}
-                    />
-                    <Button
-                      type="text"
-                      danger
-                      onClick={() => handleRemoveTaskItem(index, itemIndex)}
-                    >
-                      <DeleteOutlined />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="dashed"
-                  style={{ width: "100%" }}
-                  onClick={() => handleAddTaskItem(index)}
-                >
-                  Thêm Công việc
-                </Button>
-              </div>
-            ))}
+            <Switch
+              checked={editService.availableForBooking} // Giữ trạng thái đã chọn
+              onChange={(checked) => setEditService({ ...editService, availableForBooking: checked })}
+              checkedChildren="Có" // Nội dung khi bật
+              unCheckedChildren="Không" // Nội dung khi tắt
+            />
+            {/* Hiển thị lỗi nếu có */}
+            {errors.availableForBooking && (
+              <Text color="red.500" fontSize="sm">
+                {errors.availableForBooking}
+              </Text>
+            )}
           </div>
         </ModalBody>
         <ModalFooter>
@@ -400,7 +347,7 @@ export default function EditServiceModal({
             onClick={handleSubmit}
             isLoading={loading}
           >
-            Cập nhật
+            Lưu
           </Button>
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             Hủy

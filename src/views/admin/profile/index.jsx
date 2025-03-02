@@ -13,7 +13,7 @@ const loadingIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
 
 export default function Profile() {
   const [user, setUser] = useState({
-    name: "",
+    fullName: "",
     email: "",
     phone: "",
     address: "",
@@ -45,8 +45,7 @@ export default function Profile() {
         setLoading(false);
       } catch (error) {
         setLoading(false);
-        setUser(storedUser.user);
-        // message.error("Tải dữ liệu người dùng thất bại");
+        message.error("Tải dữ liệu người dùng thất bại");
       }
     };
 
@@ -70,7 +69,7 @@ export default function Profile() {
   };
 
   const validateProfileForm = () => {
-    if (!user.name) {
+    if (!user.fullName) {
       message.warning("Vui lòng nhập họ tên");
       return false;
     }
@@ -184,7 +183,7 @@ export default function Profile() {
                 }
               />
               <h2 style={{ fontWeight: "bold", fontSize: "22px" }}>
-                {user.name}
+                {user.fullName}
               </h2>
             </div>
 

@@ -13,7 +13,7 @@ import Card from "components/card/Card.js";
 import React from "react";
 
 export default function Default(props) {
-  const { startContent, endContent, name, growth, value, content } = props;
+  const { startContent, endContent, name, growth, value, content, unit } = props;
   const textColor = useColorModeValue("secondaryGray.900", "white");
 
   return (
@@ -52,7 +52,7 @@ export default function Default(props) {
                 fontWeight="700"
                 me="5px"
               >
-                {growth > 0 ? `+${growth}%` : `${growth}%`}{" "}
+                {growth > 0 ? `+${growth} ${unit}` : `${growth} ${unit}`}{" "}
                 {/* Hiển thị dấu + nếu growth > 0 */}
               </Text>
               <Text color={textColor} fontSize="md" fontWeight="400">

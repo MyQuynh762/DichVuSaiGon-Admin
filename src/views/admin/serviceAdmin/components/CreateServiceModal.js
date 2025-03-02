@@ -10,26 +10,29 @@ import {
   Text,
 } from "@chakra-ui/react";
 import React, { useState, useEffect } from "react";
-import { Input, Select, Upload, message } from "antd";
+import { Input, Select, Switch, Upload, message } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import "react-quill/dist/quill.snow.css";
 import { createService } from "services/serviceService";
 import { getAllCategories } from "services/categoryService";
 import ReactQuill from "react-quill";
+import { getAllStores } from "services/storeService";
 
 const { TextArea } = Input;
 
 export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
   const [newService, setNewService] = useState({
-    serviceName: "",
+    title: "",
     categoryId: "",
     shortDescription: "",
     fullDescription: "",
-    basePrice: "",
-    address: "",
+    avgPrice: "",
+    availableForBooking: false,
     images: [],
-    tasks: [],
+    storeIds: [], // Thay đổi từ storeId thành storeIds
   });
+
+
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -39,85 +42,55 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
     shortDescription: "",
     fullDescription: "",
     basePrice: "",
-    address: "",
     images: "",
   });
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const data = await getAllCategories();
+      const data = await getAllCategories(1, 1000);
       setCategories(data.categories || []);
     };
     fetchCategories();
   }, []);
+  const [stores, setStores] = useState([]);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const adminId = user ? user.user._id : null;
+      // Giả sử bạn có một API để lấy danh sách các cửa hàng
+      const response = await getAllStores(1, 1000, "", adminId);
+      setStores(response.stores || []);
+    };
+    fetchStores();
+  }, []);
 
   const handleFileChange = ({ fileList }) => {
-    const updatedFileList = fileList.map((file) => ({
-      ...file,
-      originFileObj: file.originFileObj || file,
-    }));
-    setNewService({ ...newService, images: updatedFileList });
-    setErrors({ ...errors, images: "" });
-  };
-
-  const handleAddTask = () => {
-    setNewService({
-      ...newService,
-      tasks: [...newService.tasks, { title: "", taskList: [] }],
-    });
-  };
-
-  const handleRemoveTask = (index) => {
-    const updatedTasks = newService.tasks.filter((_, i) => i !== index);
-    setNewService({ ...newService, tasks: updatedTasks });
-  };
-
-  const handleTaskChange = (index, field, value) => {
-    const updatedTasks = [...newService.tasks];
-    updatedTasks[index][field] = value;
-    setNewService({ ...newService, tasks: updatedTasks });
-  };
-
-  const handleAddTaskItem = (taskIndex) => {
-    const updatedTasks = [...newService.tasks];
-    if (!Array.isArray(updatedTasks[taskIndex].taskList)) {
-      updatedTasks[taskIndex].taskList = [];
-    }
-    updatedTasks[taskIndex].taskList.push("");
-    setNewService({ ...newService, tasks: updatedTasks });
-  };
-
-  const handleRemoveTaskItem = (taskIndex, itemIndex) => {
-    const updatedTasks = [...newService.tasks];
-    if (Array.isArray(updatedTasks[taskIndex].taskList)) {
-      updatedTasks[taskIndex].taskList.splice(itemIndex, 1);
-    }
-    setNewService({ ...newService, tasks: updatedTasks });
-  };
-
-  const handleTaskItemChange = (taskIndex, itemIndex, value) => {
-    const updatedTasks = [...newService.tasks];
-    if (Array.isArray(updatedTasks[taskIndex].taskList)) {
-      updatedTasks[taskIndex].taskList[itemIndex] = value;
-    }
-    setNewService({ ...newService, tasks: updatedTasks });
+    // Cập nhật lại mảng file images trong newService
+    setNewService({ ...newService, images: fileList });
+    setErrors({ ...errors, images: "" });  // Xóa lỗi nếu có
   };
 
   const validateFields = () => {
     const newErrors = {
-      serviceName: "",
+      storeIds: [],
+      images: [],
+      title: "",
       categoryId: "",
       shortDescription: "",
       fullDescription: "",
-      basePrice: "",
-      address: "",
-      images: "",
+      avgPrice: "",
     };
 
     let isValid = true;
 
-    if (!newService.serviceName) {
-      newErrors.serviceName = "Vui lòng nhập tên dịch vụ.";
+    if (!newService.storeIds.length) {  // Kiểm tra xem storeIds có được chọn không
+      newErrors.storeIds = "Vui lòng chọn cửa hàng.";
+      isValid = false;
+    }
+
+    if (!newService.title) {
+      newErrors.title = "Vui lòng nhập tên dịch vụ.";
       isValid = false;
     }
     if (!newService.categoryId) {
@@ -132,12 +105,8 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
       newErrors.fullDescription = "Vui lòng nhập mô tả chi tiết.";
       isValid = false;
     }
-    if (!newService.basePrice) {
-      newErrors.basePrice = "Vui lòng nhập giá cơ bản.";
-      isValid = false;
-    }
-    if (!newService.address) {
-      newErrors.address = "Vui lòng chọn địa chỉ.";
+    if (!newService.avgPrice) {
+      newErrors.avgPrice = "Vui lòng nhập giá cơ bản.";
       isValid = false;
     }
     if (!newService.images.length) {
@@ -151,40 +120,41 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
 
   const handleSubmit = async () => {
     if (!validateFields()) return;
-
     setLoading(true);
 
     const formData = new FormData();
-    formData.append("serviceName", newService.serviceName);
+    newService.storeIds.forEach((storeId, index) => {
+      formData.append(`storeIds[${index}]`, storeId);
+    });
+    formData.append("title", newService.title);
     formData.append("categoryId", newService.categoryId);
     formData.append("shortDescription", newService.shortDescription);
     formData.append("fullDescription", newService.fullDescription);
-    formData.append("basePrice", newService.basePrice);
-    formData.append("address", newService.address);
+    formData.append("avgPrice", newService.avgPrice);
+    formData.append("availableForBooking", newService.availableForBooking);
 
+    // Thêm các images vào formData
     newService.images.forEach((file) => {
       if (file.originFileObj) {
         formData.append("images", file.originFileObj);
       }
     });
-
-    formData.append("tasks", JSON.stringify(newService.tasks));
-
     try {
       const response = await createService(formData);
       if (response.success) {
         message.success("Dịch vụ đã được tạo thành công.");
         onClose();
         setNewService({
-          serviceName: "",
+          title: "",
           categoryId: "",
           shortDescription: "",
           fullDescription: "",
-          basePrice: "",
-          address: "",
+          avgPrice: "",
+          availableForBooking: false,
           images: [],
-          tasks: [],
+          storeIds: [], // Reset storeIds sau khi tạo thành công
         });
+
         fetchServices();
       }
     } catch (error) {
@@ -194,8 +164,9 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
     }
   };
 
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Tạo Dịch vụ Mới</ModalHeader>
@@ -209,15 +180,15 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
             </label>
             <Input
               placeholder="Nhập tên dịch vụ"
-              value={newService.serviceName}
+              value={newService.title}
               onChange={(e) =>
-                setNewService({ ...newService, serviceName: e.target.value })
+                setNewService({ ...newService, title: e.target.value })
               }
               style={{ height: "40px" }}
             />
-            {errors.serviceName && (
+            {errors.title && (
               <Text color="red.500" fontSize="sm">
-                {errors.serviceName}
+                {errors.title}
               </Text>
             )}
           </div>
@@ -238,16 +209,66 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
             >
               {categories.map((category) => (
                 <Select.Option key={category._id} value={category._id}>
-                  {category.categoryName}
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <img
+                      src={category.images} // Assuming category.categoryImage contains the image URL
+                      alt={category.categoryName}
+                      style={{
+                        width: "30px", // Resize image to fit nicely
+                        height: "30px",
+                        borderRadius: "50%", // Optional: makes the image circular
+                        marginRight: "10px",
+                      }}
+                    />
+                    <span>{category.categoryName}</span>
+                  </div>
                 </Select.Option>
               ))}
             </Select>
+
             {errors.categoryId && (
               <Text color="red.500" fontSize="sm">
                 {errors.categoryId}
               </Text>
             )}
           </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Cửa hàng:
+            </label>
+            <Select
+              placeholder="Chọn cửa hàng"
+              mode="multiple" // Cho phép chọn nhiều cửa hàng
+              value={newService.storeIds} // Lưu trữ mảng storeIds
+              onChange={(value) => setNewService({ ...newService, storeIds: value })}
+              style={{ width: "100%" }}
+              getPopupContainer={(triggerNode) => triggerNode.parentNode}
+            >
+              {stores.map((store) => (
+                <Select.Option key={store._id} value={store._id}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <img
+                      src={store.storeImages[0]} // Assuming store.storeImages contains the image URL
+                      alt={store.storeName}
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        borderRadius: "50%",
+                        marginRight: "10px",
+                      }}
+                    />
+                    <span>{store.storeName}</span>
+                  </div>
+                </Select.Option>
+              ))}
+            </Select>
+            {errors.storeIds && (
+              <Text color="red.500" fontSize="sm">
+                {errors.storeIds}
+              </Text>
+            )}
+          </div>
+
 
           <div style={{ marginBottom: 16 }}>
             <label
@@ -264,7 +285,8 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
                   shortDescription: e.target.value,
                 })
               }
-              style={{ height: "40px" }}
+              autoSize={{ minRows: 2, maxRows: 6 }} // Giới hạn số dòng, tránh re-render liên tục
+              style={{ height: "auto" }} // Đảm bảo chiều cao linh hoạt
             />
             {errors.shortDescription && (
               <Text color="red.500" fontSize="sm">
@@ -303,15 +325,15 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
             <Input
               type="number"
               placeholder="Nhập giá cơ bản"
-              value={newService.basePrice}
+              value={newService.avgPrice}
               onChange={(e) =>
-                setNewService({ ...newService, basePrice: e.target.value })
+                setNewService({ ...newService, avgPrice: e.target.value })
               }
               style={{ height: "40px" }}
             />
-            {errors.basePrice && (
+            {errors.avgPrice && (
               <Text color="red.500" fontSize="sm">
-                {errors.basePrice}
+                {errors.avgPrice}
               </Text>
             )}
           </div>
@@ -323,99 +345,41 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
             </label>
             <Upload
               listType="picture-card"
-              fileList={newService.images}
+              fileList={newService.images} // Sử dụng images từ newService
               onChange={handleFileChange}
               beforeUpload={() => false}
             >
               {newService.images.length < 5 && <PlusOutlined />}
             </Upload>
+
             {errors.images && (
               <Text color="red.500" fontSize="sm">
                 {errors.images}
               </Text>
             )}
           </div>
-
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
-              Tasks:
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Có thể đặt lịch:
             </label>
-            <Button onClick={handleAddTask} style={{ marginBottom: "10px" }}>
-              Thêm Task
-            </Button>
-            {newService.tasks.map((task, index) => (
-              <div
-                key={index}
-                style={{
-                  marginBottom: 10,
-                  padding: "10px",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "8px",
-                  }}
-                >
-                  <Input
-                    placeholder="Nhập tiêu đề Task"
-                    value={task.title}
-                    onChange={(e) =>
-                      handleTaskChange(index, "title", e.target.value)
-                    }
-                    style={{ width: "80%", height: "40px" }}
-                  />
-                  <Button
-                    type="text"
-                    danger
-                    onClick={() => handleRemoveTask(index)}
-                  >
-                    <DeleteOutlined />
-                  </Button>
-                </div>
-
-                {task.taskList.map((taskItem, itemIndex) => (
-                  <div
-                    key={itemIndex}
-                    style={{ display: "flex", marginBottom: "8px" }}
-                  >
-                    <Input
-                      placeholder="Nhập công việc"
-                      value={taskItem}
-                      onChange={(e) =>
-                        handleTaskItemChange(index, itemIndex, e.target.value)
-                      }
-                      style={{ width: "85%", height: "40px" }}
-                    />
-                    <Button
-                      type="text"
-                      danger
-                      onClick={() => handleRemoveTaskItem(index, itemIndex)}
-                    >
-                      <DeleteOutlined />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="dashed"
-                  style={{ width: "100%" }}
-                  onClick={() => handleAddTaskItem(index)}
-                >
-                  Thêm Công việc
-                </Button>
-              </div>
-            ))}
+            <Switch
+              checked={newService.availableForBooking} // Giữ trạng thái đã chọn
+              onChange={(checked) => setNewService({ ...newService, availableForBooking: checked })}
+              checkedChildren="Có" // Nội dung khi bật
+              unCheckedChildren="Không" // Nội dung khi tắt
+            />
+            {/* Hiển thị lỗi nếu có */}
+            {errors.availableForBooking && (
+              <Text color="red.500" fontSize="sm">
+                {errors.availableForBooking}
+              </Text>
+            )}
           </div>
+
         </ModalBody>
         <ModalFooter>
           <Button
-            colorScheme="brand"
+            colorScheme="brandScheme"
             mr={3}
             onClick={handleSubmit}
             isLoading={loading}

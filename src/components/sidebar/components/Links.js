@@ -30,21 +30,21 @@ export function SidebarLinks(props) {
           ![
             "/default",
             "/category",
-            "/service",
-            "/booking",
+            "/service-admin",
             "/approvel",
             "/user",
-            // "/work-schedule-management",
+            "/store-management",
             "/profile",
           ].includes(route.path)
         ) {
           return null;
         }
-      } else if (user?.user?.role === "suplier") {
+      } else if (user?.user?.role === "supplier") {
         if (
           ![
             "/booking",
-            "/service",
+            "/service-store",
+            "/store-management",
             "/default",
             "/profile",
           ].includes(route.path)

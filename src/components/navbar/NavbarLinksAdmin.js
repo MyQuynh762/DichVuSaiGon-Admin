@@ -93,7 +93,7 @@ export default function HeaderLinks(props) {
               fontWeight="700"
               color={textColor}
             >
-              👋&nbsp; Xin chào, {user?.user?.name}
+              👋&nbsp; Xin chào, {user?.user?.fullName}
             </Text>
             <Text
               ps="20px"

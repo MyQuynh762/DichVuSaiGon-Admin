@@ -18,44 +18,20 @@ import DefaultAuth from "layouts/auth/Default";
 
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { RiEyeCloseLine } from "react-icons/ri";
+import { signIn } from "services/authService";
 import { message } from "antd";
-
-// Danh sách tài khoản cứng
-const users = [
-  {
-    _id: "6722eed20456055add9b925c",
-    name: "Trịnh Trần Phương Tuấn",
-    email: "jack97@example.com",
-    phone: "0987654321",
-    address: "Hồ Chí Minh",
-    role: "admin",
-    active: true,
-    password: "admin123",
-  },
-  {
-    _id: "6722eed20456055add9b925d",
-    name: "Nguyễn Văn B",
-    email: "supplier@example.com",
-    phone: "0987654111",
-    address: "Hồ Chí Minh",
-    role: "suplier",
-    active: true,
-    password: "supplier123",
-  },
-];
+import { jwtDecode } from "jwt-decode";
 
 function SignIn() {
   const history = useHistory();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
-  const illustration =
-    "https://i.pinimg.com/736x/03/2f/4f/032f4f78a41408c0419fb3dcc975cf78.jpg";
+  const illustration = "https://i.pinimg.com/736x/03/2f/4f/032f4f78a41408c0419fb3dcc975cf78.jpg";
   const handleClick = () => setShow(!show);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
-
     if (!email) {
       message.warning("Vui lòng nhập email của bạn");
       return;
@@ -65,60 +41,47 @@ function SignIn() {
       return;
     }
 
-    // Kiểm tra tài khoản trong danh sách tĩnh
-    const user = users.find((user) => user.email === email && user.password === password);
+    try {
+      const response = await signIn(email, password);
+      console.log(response);
+      if (response.payload.user.role === "customer") {
+        message.warning("Bạn không có quyền truy cập");
+      } else if (response.payload.user.role === "staff") {
+        const decodedToken = jwtDecode(response.payload.accessToken);
+        const currentTime = Math.floor(Date.now() / 1000);
 
-    if (!user) {
-      message.error("Email hoặc mật khẩu không đúng!");
-      return;
+        if (decodedToken.exp < currentTime) {
+          message.error("Token đã hết hạn. Vui lòng đăng nhập lại.");
+          return;
+        }
+
+        localStorage.setItem("user", JSON.stringify(response.payload));
+        localStorage.setItem("tokenExpiry", decodedToken.exp);
+        history.push(`/admin/profile`);
+        message.success("Đăng nhập thành công!");
+
+        setEmail("");
+        setPassword("");
+      } else {
+        const decodedToken = jwtDecode(response.payload.accessToken);
+        const currentTime = Math.floor(Date.now() / 1000);
+
+        if (decodedToken.exp < currentTime) {
+          message.error("Token đã hết hạn. Vui lòng đăng nhập lại.");
+          return;
+        }
+
+        localStorage.setItem("user", JSON.stringify(response.payload));
+        localStorage.setItem("tokenExpiry", decodedToken.exp);
+
+        message.success("Đăng nhập thành công!");
+        history.push(`/`);
+        setEmail("");
+        setPassword("");
+      }
+    } catch (error) {
+      console.log(error);
     }
-
-    // Tạo token giả định
-    const fakeAccessToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(
-      JSON.stringify({ id: user._id, role: user.role, iat: Date.now(), exp: Date.now() + 3600000 })
-    )}.fakeSignature`;
-
-    const fakeRefreshToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(
-      JSON.stringify({ id: user._id, role: user.role, iat: Date.now(), exp: Date.now() + 7200000 })
-    )}.fakeSignature`;
-
-    // Định dạng dữ liệu giống mẫu bạn yêu cầu
-    const userData = {
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        role: user.role,
-        serviceIds: user.serviceIds,
-        active: user.active,
-        age: user.age,
-        discountPercentage: user.discountPercentage,
-        resetPasswordExpires: new Date(Date.now() + 86400000).toISOString(),
-        resetPasswordToken: "$2b$10$QxXeDjXdXxWT1jLliX.MauqxuUKvxOQt.olQmKmmEMTYoXsVdGQiy",
-      },
-      accessToken: fakeAccessToken,
-      refreshToken: fakeRefreshToken,
-    };
-
-    // Lưu thông tin vào localStorage
-    localStorage.setItem("user", JSON.stringify(userData));
-
-    message.success("Đăng nhập thành công!");
-
-    // Điều hướng theo role
-    if (user.role === "admin") {
-      history.push(`/admin/dashboard`);
-    } else if (user.role === "supplier") {
-      history.push(`/supplier/home`);
-    } else {
-      history.push(`/`);
-    }
-
-    // Reset form
-    setEmail("");
-    setPassword("");
   };
 
   const textColor = useColorModeValue("navy.700", "white");
@@ -144,7 +107,13 @@ function SignIn() {
           <Heading color={textColor} fontSize="36px" mb="10px">
             Đăng Nhập
           </Heading>
-          <Text mb="36px" ms="4px" color={textColorSecondary} fontWeight="400" fontSize="md">
+          <Text
+            mb="36px"
+            ms="4px"
+            color={textColorSecondary}
+            fontWeight="400"
+            fontSize="md"
+          >
             Nhập email và mật khẩu của bạn để đăng nhập!
           </Text>
         </Box>
@@ -161,29 +130,43 @@ function SignIn() {
         >
           <form onSubmit={handleSignIn}>
             <FormControl>
-              <FormLabel display="flex" ms="4px" fontSize="sm" fontWeight="500" color={textColor} mb="8px">
+              <FormLabel
+                display="flex"
+                ms="4px"
+                fontSize="sm"
+                fontWeight="500"
+                color={textColor}
+                mb="8px"
+              >
                 Email<Text color={brandStars}>*</Text>
               </FormLabel>
               <Input
                 isRequired={true}
                 variant="auth"
                 fontSize="sm"
+                ms={{ base: "0px", md: "0px" }}
                 type="email"
-                placeholder="mail@example.com"
+                placeholder="mail@simmmple.com"
                 mb="24px"
                 fontWeight="500"
                 size="lg"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <FormLabel ms="4px" fontSize="sm" fontWeight="500" color={textColor} display="flex">
+              <FormLabel
+                ms="4px"
+                fontSize="sm"
+                fontWeight="500"
+                color={textColor}
+                display="flex"
+              >
                 Mật Khẩu<Text color={brandStars}>*</Text>
               </FormLabel>
               <InputGroup size="md">
                 <Input
                   isRequired={true}
                   fontSize="sm"
-                  placeholder="Nhập mật khẩu"
+                  placeholder="Tối thiểu 8 ký tự"
                   mb="24px"
                   size="lg"
                   type={show ? "text" : "password"}
@@ -192,10 +175,23 @@ function SignIn() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <InputRightElement display="flex" alignItems="center" mt="4px">
-                  <Icon color={textColorSecondary} _hover={{ cursor: "pointer" }} as={show ? RiEyeCloseLine : MdOutlineRemoveRedEye} onClick={handleClick} />
+                  <Icon
+                    color={textColorSecondary}
+                    _hover={{ cursor: "pointer" }}
+                    as={show ? RiEyeCloseLine : MdOutlineRemoveRedEye}
+                    onClick={handleClick}
+                  />
                 </InputRightElement>
               </InputGroup>
-              <Button type="submit" fontSize="sm" variant="brand" fontWeight="500" w="100%" h="50" mb="24px">
+              <Button
+                type="submit"
+                fontSize="sm"
+                variant="brand"
+                fontWeight="500"
+                w="100%"
+                h="50"
+                mb="24px"
+              >
                 Đăng Nhập
               </Button>
             </FormControl>

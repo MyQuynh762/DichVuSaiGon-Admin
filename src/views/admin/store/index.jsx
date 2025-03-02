@@ -7,22 +7,22 @@ import {
   useColorModeValue,
   Text,
 } from "@chakra-ui/react";
-import { Table, Button, Popconfirm, Pagination, Input, Row, Col, Image } from "antd";
+import { Table, Button, Popconfirm, Pagination, Input, Row, Col, Image } from "antd"; // Add Row, Col, and Image from antd
 import React, { useEffect, useState, useCallback } from "react";
-import { getAllCategories, deleteCategory } from "services/categoryService";
+import { getAllStores, deleteStore } from "services/storeService"; // Updated import
 import { debounce } from "lodash";
 import { message } from "antd";
 import Card from "components/card/Card";
-import EditCategoryModal from "./components/EditCategoryModal";
-import CreateCategoryModal from "./components/CreateCategoryModal";
+import EditStoreModal from "./components/EditStoreModal"; // Updated modal
+import CreateStoreModal from "./components/CreateStoreModal"; // Updated modal
 
-export default function CategoryManagement() {
-  const [categories, setCategories] = useState([]);
+export default function StoreManagement() {
+  const [stores, setStores] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editCategoryData, setEditCategoryData] = useState(null);
+  const [editStoreData, setEditStoreData] = useState(null);
   const limit = 5;
   const textColor = useColorModeValue("secondaryGray.900", "white");
 
@@ -38,36 +38,38 @@ export default function CategoryManagement() {
     onClose: onEditClose,
   } = useDisclosure();
 
-  const fetchCategories = useCallback(
+  const fetchStores = useCallback(
     async (search = searchTerm, page = currentPage) => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const adminId = user ? user.user._id : null;
       setLoading(true);
-      const data = await getAllCategories(page, limit, search);
-      setCategories(data.categories);
+      const data = await getAllStores(page, limit, search, adminId);
+      setStores(data.stores);
       setTotalPages(data.totalPages);
       setLoading(false);
     },
     [currentPage, limit]
   );
 
-  const debouncedFetchCategories = useCallback(
+  const debouncedFetchStores = useCallback(
     debounce((value) => {
       setCurrentPage(1);
-      fetchCategories(value, 1);
+      fetchStores(value, 1);
     }, 800),
-    [fetchCategories]
+    [fetchStores]
   );
 
   useEffect(() => {
-    fetchCategories(searchTerm, currentPage);
-  }, [fetchCategories, currentPage]);
+    fetchStores(searchTerm, currentPage);
+  }, [fetchStores, currentPage]);
 
-  const confirmDeleteCategory = async (categoryId) => {
+  const confirmDeleteStore = async (storeId) => {
     try {
-      await deleteCategory(categoryId);
-      message.success("Category deleted.");
-      fetchCategories();
+      await deleteStore(storeId);
+      message.success("Xóa cửa hàng thành công.");
+      fetchStores();
     } catch (error) {
-      message.error("Error deleting category.");
+      message.error("Error deleting store.");
     }
   };
 
@@ -76,36 +78,73 @@ export default function CategoryManagement() {
   };
 
   const handleEditClick = (record) => {
-    setEditCategoryData(record);
+    setEditStoreData(record);
     onEditOpen();
   };
 
   const columns = [
     {
-      title: "Tên Danh Mục",
-      dataIndex: "categoryName",
-      key: "categoryName",
+      title: "Tên Cửa Hàng",
+      dataIndex: "storeName",
+      key: "storeName",
     },
     {
-      title: "Hình ảnh",
-      dataIndex: "images", // Đảm bảo đây là mảng chứa URL của ảnh dịch vụ
-      key: "images",
+      title: "Số Điện Thoại",
+      dataIndex: "storePhone",
+      key: "storePhone",
+    },
+    {
+      title: "Email",
+      dataIndex: "storeEmail",
+      key: "storeEmail",
+    },
+    {
+      title: "Địa Chỉ",
+      dataIndex: "storeAddress",
+      key: "storeAddress",
+      render: (address, record) => (
+        <a
+          href={record.storeMaps}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#1890FF", textDecoration: "underline" }}
+        >
+          {address}
+        </a>
+      ),
+    },
+    {
+      title: "Hình Ảnh",
+      dataIndex: "storeImages", // Assuming storeImages is an array of image URLs
+      key: "storeImages",
       render: (images) => (
         <Row gutter={[8, 8]}>
-          {images ? (
-            <Col span={6}>
-              <Image
-                width={60}
-                height={60}
-                src={images}
-                alt={`Service Image`}
-                style={{ borderRadius: "8px" }}
-              />
-            </Col>
+          {images && images.length > 0 ? (
+            images.map((image, index) => (
+              <Col span={6} key={index}>
+                <Image
+                  width={60}
+                  height={60}
+                  src={image}
+                  alt={`Store Image ${index + 1}`}
+                  style={{ borderRadius: "8px" }}
+                />
+              </Col>
+            ))
           ) : (
             <Text>Không có hình ảnh</Text>
           )}
         </Row>
+      ),
+    },
+    {
+      title: "Trạng Thái",
+      dataIndex: "isDelete",
+      key: "isDelete",
+      render: (status) => (
+        <span style={{ color: status ? "red" : "green", fontWeight: "bold" }}>
+          {status ? "Đã Xóa" : "Hoạt Động"}
+        </span>
       ),
     },
     {
@@ -130,10 +169,10 @@ export default function CategoryManagement() {
           </Button>
 
           <Popconfirm
-            title="Bạn có chắc muốn xóa danh mục này không?"
+            title="Bạn có chắc muốn xóa cửa hàng này không?"
             onConfirm={(e) => {
               e.stopPropagation();
-              confirmDeleteCategory(record._id);
+              confirmDeleteStore(record._id);
             }}
             okText="Có"
             cancelText="Không"
@@ -166,17 +205,17 @@ export default function CategoryManagement() {
             fontWeight="700"
             lineHeight="100%"
           >
-            Quản Lý Danh Mục
+            Quản Lý Cửa Hàng
           </Text>
         </Flex>
         <Flex justifyContent="space-between" mb="20px">
           <Input
-            placeholder="Tìm kiếm danh mục..."
+            placeholder="Tìm kiếm cửa hàng..."
             allowClear
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              debouncedFetchCategories(e.target.value);
+              debouncedFetchStores(e.target.value);
             }}
             style={{ width: "85%" }}
           />
@@ -193,7 +232,7 @@ export default function CategoryManagement() {
           <>
             <Table
               columns={columns}
-              dataSource={categories}
+              dataSource={stores}
               pagination={false}
               rowKey={(record) => record._id}
               style={{ width: "100%", cursor: "pointer" }}
@@ -205,19 +244,17 @@ export default function CategoryManagement() {
               onChange={handlePageChange}
               style={{ marginTop: "20px", textAlign: "center" }}
             />
-            <CreateCategoryModal
+            <CreateStoreModal
               isOpen={isCreateOpen}
               onClose={onCreateClose}
-              fetchCategories={fetchCategories}
+              fetchStores={fetchStores}
             />
-            {editCategoryData && (
-              <EditCategoryModal
-                isOpen={isEditOpen}
-                onClose={onEditClose}
-                category={editCategoryData}
-                fetchCategories={fetchCategories}
-              />
-            )}
+            <EditStoreModal
+              isOpen={isEditOpen}
+              onClose={onEditClose}
+              store={editStoreData}
+              fetchStores={fetchStores}
+            />
           </>
         )}
       </Card>

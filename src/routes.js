@@ -20,13 +20,10 @@ import Profile from "views/admin/profile";
 import Category from "views/admin/categories";
 import Order from "views/admin/orders";
 import User from "views/admin/user";
-import Product from "views/admin/products";
+import ServiceStore from "views/admin/serviceStore";
+import ServiceAdmin from "views/admin/serviceAdmin";
 import ProfileApproval from "views/admin/profileapproval";
-import StaffOrders from "views/admin/stafforder";
-import WorkSchedule from "views/admin/workSchedule";
-import WorkScheduleManagement from "views/admin/workScheduleAdmin";
-import PersonalRevenue from "views/admin/personalRevenue"; // Component mới cho Doanh thu cá nhân
-
+import StoreManagement from "views/admin/store";
 import SignInCentered from "views/auth/signIn";
 
 const user = JSON.parse(localStorage.getItem("user"));
@@ -72,8 +69,22 @@ const routes = [
         color="inherit"
       />
     ),
-    path: "/service",
-    component: Product,
+    path: "/service-admin",
+    component: ServiceAdmin,
+  },
+  {
+    name: "Dịch vụ",
+    layout: "/admin",
+    icon: (
+      <Icon
+        as={MdOutlineShoppingCart}
+        width="20px"
+        height="20px"
+        color="inherit"
+      />
+    ),
+    path: "/service-store",
+    component: ServiceStore,
   },
   {
     name: "Duyệt hồ sơ",
@@ -104,11 +115,11 @@ const routes = [
     component: User,
   },
   {
-    name: "Quản lý lịch làm việc",
+    name: "Quản lý cửa hàng",
     layout: "/admin",
-    path: "/work-schedule-management",
+    path: "/store-management",
     icon: <Icon as={MdEventNote} width="20px" height="20px" color="inherit" />,
-    component: WorkScheduleManagement,
+    component: StoreManagement,
   },
 
   {
@@ -117,36 +128,6 @@ const routes = [
     path: "/sign-in",
     icon: <Icon as={MdLock} width="20px" height="20px" color="inherit" />,
     component: SignInCentered,
-  },
-  {
-    name: "Lịch hẹn của tôi",
-    layout: "/admin",
-    path: "/staff-order",
-    icon: (
-      <Icon
-        as={MdOutlineReceiptLong}
-        width="20px"
-        height="20px"
-        color="inherit"
-      />
-    ),
-    component: StaffOrders,
-  },
-  {
-    name: "Lịch làm việc",
-    layout: "/admin",
-    path: "/work-schedule",
-    icon: <Icon as={MdSchedule} width="20px" height="20px" color="inherit" />,
-    component: WorkSchedule,
-  },
-  {
-    name: "Doanh thu cá nhân", // Tab mới cho Doanh thu cá nhân
-    layout: "/admin",
-    path: "/personal-revenue",
-    icon: (
-      <Icon as={MdAttachMoney} width="20px" height="20px" color="inherit" />
-    ),
-    component: PersonalRevenue,
   },
   {
     name: "Hồ sơ",
