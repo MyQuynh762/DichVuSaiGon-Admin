@@ -12,9 +12,8 @@ import {
 } from "antd";
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  getAllBookings,
+  getBookingByAdminId,
   changeStatusBooking,
-  completeBooking,
 } from "services/bookingService";
 import { debounce } from "lodash";
 import Card from "components/card/Card";
@@ -81,8 +80,10 @@ export default function BookingManagement() {
   const fetchBookingsData = useCallback(
     async (search = searchTerm) => {
       try {
+        const user = JSON.parse(localStorage.getItem("user"));
+        const adminId = user ? user.user._id : null;
         setLoading(true);
-        const data = await getAllBookings(currentPage, limit, search);
+        const data = await getBookingByAdminId(adminId, currentPage, limit, search);
         setBookings(data.bookings);
         setTotalPages(data.totalPages);
         setLoading(false);

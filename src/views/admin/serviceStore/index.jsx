@@ -173,7 +173,7 @@ export default function ServiceManagement() {
       render: (category, record) => (
         <div style={{ display: "flex", alignItems: "center" }}>
           <img
-            src={record?.categoryId?.images}  // Assuming categoryId contains 'images'
+            src={record.categoryId.images}  // Assuming categoryId contains 'images'
             alt={category}
             style={{
               width: "30px",

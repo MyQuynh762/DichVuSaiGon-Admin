@@ -19,6 +19,7 @@ import MainDashboard from "views/admin/default";
 import Profile from "views/admin/profile";
 import Category from "views/admin/categories";
 import Order from "views/admin/orders";
+import Booking from "views/admin/booking";
 import User from "views/admin/user";
 import ServiceStore from "views/admin/serviceStore";
 import ServiceAdmin from "views/admin/serviceAdmin";
@@ -49,6 +50,21 @@ const routes = [
       />
     ),
     component: Order,
+    secondary: true,
+  },
+  {
+    name: "Đặt lịch",
+    layout: "/admin",
+    path: "/booking-store",
+    icon: (
+      <Icon
+        as={MdOutlineReceiptLong}
+        width="20px"
+        height="20px"
+        color="inherit"
+      />
+    ),
+    component: Booking,
     secondary: true,
   },
   {

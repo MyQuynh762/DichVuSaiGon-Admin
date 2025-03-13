@@ -64,7 +64,7 @@ export default function EditServiceModal({ isOpen, onClose, serviceData, fetchSe
         avgPrice: serviceData.avgPrice,
         availableForBooking: serviceData.availableForBooking || false,
         images: serviceData.serviceImages.map((url, index) => ({ uid: index, url })),
-        storeIds: serviceData.storeIds || [],
+        storeIds: serviceData.storeIds?.map((store) => (store._id)) || [],
       });
     }
   }, [serviceData]);
@@ -127,7 +127,6 @@ export default function EditServiceModal({ isOpen, onClose, serviceData, fetchSe
       setLoading(false);
     }
   };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
@@ -202,35 +201,44 @@ export default function EditServiceModal({ isOpen, onClose, serviceData, fetchSe
             </label>
             <Select
               placeholder="Chọn cửa hàng"
-              mode="multiple" // Cho phép chọn nhiều cửa hàng
-              value={editService.storeIds} // Lưu trữ mảng storeIds
+              mode="multiple"
+              value={editService.storeIds}
               onChange={(value) => setEditService({ ...editService, storeIds: value })}
               style={{ width: "100%" }}
               getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
               {stores.map((store) => (
-                <Select.Option key={store._id} value={store._id}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <img
-                      src={store.storeImages[0]} // Assuming store.storeImages contains the image URL
-                      alt={store.storeName}
-                      style={{
-                        width: "30px",
-                        height: "30px",
-                        borderRadius: "50%",
-                        marginRight: "10px",
-                      }}
-                    />
-                    <span>{store.storeName}</span>
-                  </div>
-                </Select.Option>
+                <Select
+                  placeholder="Chọn cửa hàng"
+                  mode="multiple" // Cho phép chọn nhiều cửa hàng
+                  value={editService.storeIds} // Lưu trữ mảng storeIds
+                  onChange={(value) => setEditService({ ...editService, storeIds: value })}
+                  style={{ width: "100%" }}
+                  getPopupContainer={(triggerNode) => triggerNode.parentNode}
+                >
+                  {stores.map((store) => (
+                    <Select.Option key={store._id} value={store._id}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <img
+                          src={store.storeImages[0]} // Assuming store.storeImages contains the image URL
+                          alt={store.storeName}
+                          style={{
+                            width: "30px",
+                            height: "30px",
+                            borderRadius: "50%",
+                            marginRight: "10px",
+                          }}
+                        />
+                        <span>{store.storeName}</span>
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+
               ))}
             </Select>
-            {errors.storeIds && (
-              <Text color="red.500" fontSize="sm">
-                {errors.storeIds}
-              </Text>
-            )}
+
+            {errors.storeIds && <Text color="red.500" fontSize="sm">{errors.storeIds}</Text>}
           </div>
 
           <div style={{ marginBottom: 16 }}>

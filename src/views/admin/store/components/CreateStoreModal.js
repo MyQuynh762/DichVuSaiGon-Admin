@@ -9,11 +9,12 @@ import {
   Button,
   Text,
 } from "@chakra-ui/react";
-import React, { useState } from "react";
-import { Input, Upload, message } from "antd";
+import React, { useEffect, useState } from "react";
+import { Input, Upload, message, Select } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import ReactQuill from "react-quill";
 import { createStore } from "services/storeService"; // Assuming a service for store creation
+import axios from "axios";
 
 const { TextArea } = Input;
 
@@ -27,6 +28,15 @@ export default function CreateStoreModal({ isOpen, onClose, fetchStores }) {
     storeDescription: "",
     storeImages: [],
   });
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [address, setAddress] = useState({
+    province: "",
+    district: "",
+    ward: "",
+    street: "",  // Thêm dòng này để lưu tên đường
+  });
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({
@@ -38,9 +48,6 @@ export default function CreateStoreModal({ isOpen, onClose, fetchStores }) {
     storeDescription: "",
     storeImages: "",
   });
-
-  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-
   // Get adminId from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
   const adminId = user ? user.user._id : null;
@@ -53,6 +60,66 @@ export default function CreateStoreModal({ isOpen, onClose, fetchStores }) {
     setNewStore({ ...newStore, storeImages: updatedFileList });
     setErrors({ ...errors, storeImages: "" });
   };
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const response = await axios.get("https://provinces.open-api.vn/api/p/");
+        setProvinces(response.data);
+      } catch (error) {
+        console.error("Không thể lấy danh sách tỉnh/thành phố:", error);
+      }
+    };
+    if (isOpen) fetchProvinces();
+  }, [isOpen]);
+  const handleProvinceChange = async (value) => {
+    const provinceCode = value; 
+    setAddress({ ...address, province: provinceCode, district: "", ward: "" });
+    setDistricts([]);
+    setWards([]);
+    try {
+      const response = await axios.get(
+        `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`
+      );
+      setDistricts(response.data.districts);
+    } catch (error) {
+      console.error("Không thể lấy danh sách quận/huyện:", error);
+    }
+  };
+  const handleDistrictChange = async (value) => {
+    const districtCode = value;
+    setAddress({ ...address, district: districtCode, ward: "" });
+    setWards([]);
+    try {
+      const response = await axios.get(
+        `https://provinces.open-api.vn/api/d/${districtCode}?depth=2`
+      );
+      setWards(response.data.wards);
+    } catch (error) {
+      console.error("Không thể lấy danh sách phường/xã:", error);
+    }
+  };
+  const handleWardChange = (value) => {
+    setAddress({ ...address, ward: value });
+  };
+  const handleStreetChange = (e) => {
+    setAddress({ ...address, street: e.target.value });
+  };
+
+  useEffect(() => {
+    if (address.province && address.district && address.ward && address.street) {
+      const selectedProvince = provinces.find(
+        (p) => p.code === address.province
+      )?.name;
+      const selectedDistrict = districts.find(
+        (d) => d.code === address.district
+      )?.name;
+      const selectedWard = wards.find((w) => w.code === address.ward)?.name;
+
+      const fullAddress = `${address.street}, ${selectedWard}, ${selectedDistrict}, ${selectedProvince}`;
+      setNewStore({ ...newStore, storeAddress: fullAddress });
+    }
+  }, [address, provinces, districts, wards]);
+
 
   const validateFields = () => {
     const newErrors = {
@@ -66,6 +133,22 @@ export default function CreateStoreModal({ isOpen, onClose, fetchStores }) {
     };
 
     let isValid = true;
+    if (!address.street) {
+      newErrors.storeAddress = "Vui lòng nhập tên đường.";
+      isValid = false;
+    }
+    if (!address.province) {
+      newErrors.storeAddress = "Vui lòng chọn tỉnh/thành phố.";
+      isValid = false;
+    }
+    if (!address.district) {
+      newErrors.storeAddress = "Vui lòng chọn quận/huyện.";
+      isValid = false;
+    }
+    if (!address.ward) {
+      newErrors.storeAddress = "Vui lòng chọn phường/xã.";
+      isValid = false;
+    }
 
     if (!newStore.storeName) {
       newErrors.storeName = "Vui lòng nhập tên cửa hàng.";
@@ -170,28 +253,6 @@ export default function CreateStoreModal({ isOpen, onClose, fetchStores }) {
               </Text>
             )}
           </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
-              Địa chỉ:
-            </label>
-            <Input
-              placeholder="Nhập địa chỉ cửa hàng"
-              value={newStore.storeAddress}
-              onChange={(e) =>
-                setNewStore({ ...newStore, storeAddress: e.target.value })
-              }
-              style={{ height: "40px" }}
-            />
-            {errors.storeAddress && (
-              <Text color="red.500" fontSize="sm">
-                {errors.storeAddress}
-              </Text>
-            )}
-          </div>
-
           <div style={{ marginBottom: 16 }}>
             <label
               style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
@@ -212,7 +273,81 @@ export default function CreateStoreModal({ isOpen, onClose, fetchStores }) {
               </Text>
             )}
           </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Tên Đường:
+            </label>
+            <Input
+              placeholder="Nhập tên đường"
+              value={address.street}
+              onChange={handleStreetChange}
+              style={{ height: "40px" }}
+            />
+            {address.street && (
+              <Text color="red.500" fontSize="sm">
+                {errors.storeAddress}
+              </Text>
+            )}
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Tỉnh/Thành phố:
+            </label>
+            <Select
+              placeholder="Chọn tỉnh/thành phố"
+              value={address.province}
+              onChange={handleProvinceChange}
+              style={{ width: "100%", height: "40px" }}
+              getPopupContainer={(triggerNode) => triggerNode.parentNode}
+            >
+              {provinces.map((province) => (
+                <Select.Option key={province.code} value={province.code}>
+                  {province.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
 
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Quận/Huyện:
+            </label>
+            <Select
+              placeholder="Chọn quận/huyện"
+              value={address.district}
+              onChange={handleDistrictChange}
+              style={{ width: "100%", height: "40px" }}
+              getPopupContainer={(triggerNode) => triggerNode.parentNode}
+              disabled={!districts.length}
+
+            >
+              {districts.map((district) => (
+                <Select.Option key={district.code} value={district.code}>
+                  {district.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Phường/Xã:
+            </label>
+            <Select
+              placeholder="Chọn phường/xã"
+              value={address.ward}
+              onChange={handleWardChange}
+              style={{ width: "100%", height: "40px" }}
+              getPopupContainer={(triggerNode) => triggerNode.parentNode}
+              disabled={!wards.length}
+            >
+              {wards.map((ward) => (
+                <Select.Option key={ward.code} value={ward.code}>
+                  {ward.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
           <div style={{ marginBottom: 16 }}>
             <label
               style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}

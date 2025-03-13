@@ -57,7 +57,7 @@ export default function ServiceManagement() {
           search,
           categoryId,
           storeId, // ✅ Thêm storeId vào đây
-          adminId
+          // adminId
         );
         if (data && data.services) {
           setServices(data.services);

@@ -25,6 +25,7 @@ export default function Dashboard(props) {
         return [
           "/default",
           "/category",
+          "/booking",
           "/service-admin",
           "/approvel",
           "/user",
@@ -33,7 +34,7 @@ export default function Dashboard(props) {
         ].includes(route.path);
       } else if (userRole === "supplier") {
         return [
-          "/booking",
+          "/booking-store",
           "/store-management",
           "/service-store",
           "/default",

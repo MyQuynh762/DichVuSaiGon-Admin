@@ -30,6 +30,7 @@ export function SidebarLinks(props) {
           ![
             "/default",
             "/category",
+            "/booking",
             "/service-admin",
             "/approvel",
             "/user",
@@ -42,7 +43,7 @@ export function SidebarLinks(props) {
       } else if (user?.user?.role === "supplier") {
         if (
           ![
-            "/booking",
+            "/booking-store",
             "/service-store",
             "/store-management",
             "/default",

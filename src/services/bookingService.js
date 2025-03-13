@@ -50,14 +50,13 @@ export const createBooking = async (bookingData) => {
 // API thay đổi trạng thái booking
 export const changeStatusBooking = async (
   bookingId,
-  status,
-  rejectionReason
+  status
 ) => {
   try {
     const token = getToken();
-    const response = await axios.patch(
+    const response = await axios.put(
       `${API_URL}/booking/${bookingId}/status`,
-      { status, rejectionReason },
+      { status },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -88,53 +87,12 @@ export const getBookingById = async (bookingId) => {
   }
 };
 
-// API gửi email xác nhận cho khách hàng
-export const sendCustomerEmail = async (bookingId) => {
-  try {
-    const token = getToken();
-    const response = await axios.post(
-      `${API_URL}/booking/${bookingId}/send-customer-email`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error sending customer email:", error);
-    throw error;
-  }
-};
 
-// API gửi email cho nhân viên được book
-export const sendStaffEmail = async (bookingId) => {
+export const getBookingByAdminId = async (adminId, page = 1, limit = 10, search) => {
   try {
     const token = getToken();
-    const response = await axios.post(
-      `${API_URL}/booking/${bookingId}/send-staff-email`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error sending staff email:", error);
-    throw error;
-  }
-};
-// API lấy lịch sử booking của nhân viên theo ID
-export const getBookingByStaffId = async (staffId, page = 1, limit = 10) => {
-  try {
-    const token = getToken();
-    const response = await axios.get(`${API_URL}/booking/staff/${staffId}`, {
-      params: { page, limit },
+    const response = await axios.get(`${API_URL}/booking/admin/${adminId}`, {
+      params: { page, limit, search },
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -150,35 +108,14 @@ export const getBookingByStaffId = async (staffId, page = 1, limit = 10) => {
     };
   }
 };
-export const completeBooking = async (
-  bookingId,
-  actualAmountReceived,
-  completionTime
-) => {
-  try {
-    const token = getToken();
-    const response = await axios.patch(
-      `${API_URL}/booking/${bookingId}/complete`,
-      { actualAmountReceived, completionTime },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error completing booking:", error);
-    throw error;
-  }
-};
-export const changeBookingStaff = async (bookingId, staffData) => {
+
+// API thay đổi cửa hàng cho booking
+export const changeBookingStore = async (bookingId, storeId) => {
   try {
     const token = getToken();
     const response = await axios.put(
-      `${API_URL}/booking/change-staff/${bookingId}`,
-      staffData,
+      `${API_URL}/booking/${bookingId}/change-store`,
+      { storeId },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -188,7 +125,7 @@ export const changeBookingStaff = async (bookingId, staffData) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Lỗi khi thay đổi nhân viên trong booking:", error);
+    console.error("Error changing booking store:", error);
     throw error;
   }
 };

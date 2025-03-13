@@ -64,7 +64,7 @@ export default function EditServiceModal({ isOpen, onClose, serviceData, fetchSe
         avgPrice: serviceData.avgPrice,
         availableForBooking: serviceData.availableForBooking || false,
         images: serviceData.serviceImages.map((url, index) => ({ uid: index, url })),
-        storeIds: serviceData.storeIds || [],
+        storeIds: serviceData.storeIds?.map((store) => (store._id)) || [],
       });
     }
   }, [serviceData]);
