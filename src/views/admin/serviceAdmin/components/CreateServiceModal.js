@@ -14,7 +14,7 @@ import { Input, Select, Switch, Upload, message } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import "react-quill/dist/quill.snow.css";
 import { createService } from "services/serviceService";
-import { getAllCategories } from "services/categoryService";
+import { getAllCategorieFilter } from "services/categoryService";
 import ReactQuill from "react-quill";
 import { getAllStores } from "services/storeService";
 
@@ -47,7 +47,7 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const data = await getAllCategories(1, 1000);
+      const data = await getAllCategorieFilter(1, 1000);
       setCategories(data.categories || []);
     };
     fetchCategories();

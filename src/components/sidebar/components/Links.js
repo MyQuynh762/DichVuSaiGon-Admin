@@ -30,6 +30,7 @@ export function SidebarLinks(props) {
           ![
             "/default",
             "/category",
+            "/banner",
             "/booking",
             "/service-admin",
             "/approvel",

@@ -1,14 +1,6 @@
-import {
-  Box,
-  Flex,
-  CircularProgress,
-  useDisclosure,
-  Button as ChakraButton,
-  useColorModeValue,
-  Text,
-} from "@chakra-ui/react";
-import { Table, Button, Popconfirm, Pagination, Input, Row, Col, Image } from "antd";
 import React, { useEffect, useState, useCallback } from "react";
+import { Table, Button, Popconfirm, Pagination, Input, Row, Col, Image } from "antd";
+import { Box, Flex, CircularProgress, useDisclosure, Button as ChakraButton, useColorModeValue, Text } from "@chakra-ui/react";
 import { getAllCategories, deleteCategory } from "services/categoryService";
 import { debounce } from "lodash";
 import { message } from "antd";
@@ -26,17 +18,8 @@ export default function CategoryManagement() {
   const limit = 5;
   const textColor = useColorModeValue("secondaryGray.900", "white");
 
-  const {
-    isOpen: isCreateOpen,
-    onOpen: onCreateOpen,
-    onClose: onCreateClose,
-  } = useDisclosure();
-
-  const {
-    isOpen: isEditOpen,
-    onOpen: onEditOpen,
-    onClose: onEditClose,
-  } = useDisclosure();
+  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
 
   const fetchCategories = useCallback(
     async (search = searchTerm, page = currentPage) => {
@@ -80,6 +63,87 @@ export default function CategoryManagement() {
     onEditOpen();
   };
 
+  const expandedRowRender = (category) => {
+    return (
+      <Table
+        columns={[
+          {
+            title: "Tên Danh Mục Con",
+            dataIndex: "categoryName",
+            key: "categoryName",
+          },
+          {
+            title: "Hình ảnh",
+            dataIndex: "images",
+            key: "images",
+            render: (images) => (
+              <Row gutter={[8, 8]}>
+                {images ? (
+                  <Col span={6}>
+                    <Image
+                      width={60}
+                      height={60}
+                      src={images}
+                      alt={`Service Image`}
+                      style={{ borderRadius: "8px" }}
+                    />
+                  </Col>
+                ) : (
+                  <Text>Không có hình ảnh</Text>
+                )}
+              </Row>
+            ),
+          },
+          {
+            title: "Thao Tác",
+            key: "actions",
+            align: "center",
+            render: (text, record) => (
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <Button
+                  style={{
+                    backgroundColor: "#FF8000",
+                    borderColor: "#FF8000",
+                    color: "white",
+                  }}
+                  type="primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditClick(record);
+                  }}
+                >
+                  Chỉnh Sửa
+                </Button>
+
+                <Popconfirm
+                  title="Bạn có chắc muốn xóa danh mục này không?"
+                  onConfirm={(e) => {
+                    e.stopPropagation();
+                    confirmDeleteCategory(record._id);
+                  }}
+                  okText="Có"
+                  cancelText="Không"
+                >
+                  <Button
+                    type="danger"
+                    style={{ marginLeft: "10px" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Xóa
+                  </Button>
+                </Popconfirm>
+              </div>
+            ),
+          },
+        ]}
+        dataSource={category.listCategory || []} // Dùng listCategory của category cha
+        pagination={false}
+        rowKey={(record) => record._id}
+        style={{ width: "100%" }}
+      />
+    );
+  };
+
   const columns = [
     {
       title: "Tên Danh Mục",
@@ -88,7 +152,7 @@ export default function CategoryManagement() {
     },
     {
       title: "Hình ảnh",
-      dataIndex: "images", // Đảm bảo đây là mảng chứa URL của ảnh dịch vụ
+      dataIndex: "images",
       key: "images",
       render: (images) => (
         <Row gutter={[8, 8]}>
@@ -196,6 +260,7 @@ export default function CategoryManagement() {
               dataSource={categories}
               pagination={false}
               rowKey={(record) => record._id}
+              expandedRowRender={expandedRowRender} // Thêm expandedRowRender ở đây
               style={{ width: "100%", cursor: "pointer" }}
             />
             <Pagination

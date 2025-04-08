@@ -10,9 +10,11 @@ import {
   Image,
   Text,
 } from "@chakra-ui/react";
-import React, { useState } from "react";
-import { Input, message } from "antd";
-import { createCategory } from "services/categoryService";
+import React, { useState, useEffect } from "react";
+import { Input, message, Select as AntdSelect } from "antd"; // Import Select từ antd
+import { createCategory, getAllCategories } from "services/categoryService";
+
+const { Option } = AntdSelect; // Lấy Option từ antd
 
 export default function CreateCategoryModal({
   isOpen,
@@ -24,41 +26,53 @@ export default function CreateCategoryModal({
     description: "",
     image: null,
     imagePreview: null,
+    categoryParent: null,
   });
 
   const [loading, setLoading] = useState(false);
-
-  // Error states for each input field
   const [errors, setErrors] = useState({
     categoryName: "",
     description: "",
     image: "",
+    categoryParent: "",
   });
+
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchParentCategories = async () => {
+      try {
+        const parentCategories = await getAllCategories(1, 1000);
+        setCategories(parentCategories.categories); // Lưu danh sách các danh mục cha
+      } catch (error) {
+        message.error("Lấy danh mục cha thất bại.");
+      }
+    };
+    fetchParentCategories();
+  }, []);
 
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
   const PLACEHOLDER_IMAGE = "https://via.placeholder.com/150";
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-
     if (file) {
       if (file.size > MAX_IMAGE_SIZE) {
         setErrors({ ...errors, image: "Vui lòng chọn hình ảnh nhỏ hơn 5MB." });
         return;
       }
-
       setNewCategory({
         ...newCategory,
         image: file,
         imagePreview: URL.createObjectURL(file),
       });
-      setErrors({ ...errors, image: "" }); // Clear image error if valid
+      setErrors({ ...errors, image: "" });
     }
   };
 
   const handleSubmit = async () => {
     let valid = true;
-    const newErrors = { categoryName: "", description: "", image: "" };
+    const newErrors = { categoryName: "", description: "", image: "", categoryParent: "" };
 
     if (!newCategory.categoryName) {
       newErrors.categoryName = "Vui lòng nhập tên danh mục.";
@@ -75,6 +89,11 @@ export default function CreateCategoryModal({
       valid = false;
     }
 
+    if (!newCategory.categoryParent) {
+      newErrors.categoryParent = "Vui lòng chọn danh mục cha.";
+      valid = false;
+    }
+
     setErrors(newErrors);
 
     if (!valid) return;
@@ -85,6 +104,7 @@ export default function CreateCategoryModal({
     formData.append("categoryName", newCategory.categoryName);
     formData.append("description", newCategory.description);
     formData.append("image", newCategory.image);
+    formData.append("categoryParent", newCategory.categoryParent);
 
     try {
       const response = await createCategory(formData);
@@ -96,6 +116,7 @@ export default function CreateCategoryModal({
           description: "",
           image: null,
           imagePreview: null,
+          categoryParent: null,
         });
         fetchCategories();
       }
@@ -114,9 +135,7 @@ export default function CreateCategoryModal({
         <ModalCloseButton />
         <ModalBody>
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Tên Danh mục:
             </label>
             <Input
@@ -136,9 +155,7 @@ export default function CreateCategoryModal({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Mô tả:
             </label>
             <Input.TextArea
@@ -146,10 +163,7 @@ export default function CreateCategoryModal({
               placeholder="Nhập mô tả"
               value={newCategory.description}
               onChange={(e) =>
-                setNewCategory({
-                  ...newCategory,
-                  description: e.target.value,
-                })
+                setNewCategory({ ...newCategory, description: e.target.value })
               }
               rows={4}
             />
@@ -161,9 +175,42 @@ export default function CreateCategoryModal({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
+              Chọn Danh mục Cha:
+            </label>
+            <AntdSelect
+              placeholder="Chọn danh mục cha"
+              value={newCategory.categoryParent}
+              onChange={(value) =>
+                setNewCategory({ ...newCategory, categoryParent: value })
+              }
+              style={{ width: "100%", height: "40px" }}
+              getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
+              {categories.map((category) => (
+                <Option key={category._id} value={category._id}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <Image
+                      src={category.images || PLACEHOLDER_IMAGE}
+                      alt={category.categoryName}
+                      boxSize="30px"
+                      objectFit="cover"
+                      style={{ marginRight: "8px", borderRadius: "5px" }}
+                    />
+                    {category.categoryName}
+                  </div>
+                </Option>
+              ))}
+            </AntdSelect>
+            {errors.categoryParent && (
+              <Text color="red.500" fontSize="sm">
+                {errors.categoryParent}
+              </Text>
+            )}
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Xem trước Hình ảnh:
             </label>
             <Image
@@ -177,9 +224,7 @@ export default function CreateCategoryModal({
           </div>
 
           <div>
-            <label
-              style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}
-            >
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: 8 }}>
               Tải lên Hình ảnh Danh mục:
             </label>
             <Input type="file" accept="image/*" onChange={handleFileChange} />

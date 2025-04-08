@@ -25,6 +25,7 @@ export default function Dashboard(props) {
         return [
           "/default",
           "/category",
+          "/banner",
           "/booking",
           "/service-admin",
           "/approvel",

@@ -10,9 +10,8 @@ import {
   MdOutlineLocalOffer,
   MdOutlinePeopleAlt,
   MdOutlinePhotoSizeSelectLarge,
-  MdSchedule,
+  MdGroup,
   MdEventNote,
-  MdAttachMoney, // Icon mới cho Doanh thu cá nhân
 } from "react-icons/md";
 
 import MainDashboard from "views/admin/default";
@@ -21,6 +20,7 @@ import Category from "views/admin/categories";
 import Order from "views/admin/orders";
 import Booking from "views/admin/booking";
 import User from "views/admin/user";
+import Banner from "views/admin/banner";
 import ServiceStore from "views/admin/serviceStore";
 import ServiceAdmin from "views/admin/serviceAdmin";
 import ProfileApproval from "views/admin/profileapproval";
@@ -36,6 +36,13 @@ const routes = [
     path: "/default",
     icon: <Icon as={MdHome} width="20px" height="20px" color="inherit" />,
     component: MainDashboard,
+  },
+  {
+    name: "Banner",
+    layout: "/admin",
+    icon: <Icon as={MdOutlinePhotoSizeSelectLarge} width="20px" height="20px" color="inherit" />,
+    path: "/banner",
+    component: Banner,
   },
   {
     name: "Đặt lịch",
@@ -74,6 +81,7 @@ const routes = [
     path: "/category",
     component: Category,
   },
+  
   {
     name: "Dịch vụ",
     layout: "/admin",
@@ -108,7 +116,7 @@ const routes = [
     path: "/approvel",
     icon: (
       <Icon
-        as={MdOutlinePhotoSizeSelectLarge}
+        as={MdGroup}
         width="20px"
         height="20px"
         color="inherit"

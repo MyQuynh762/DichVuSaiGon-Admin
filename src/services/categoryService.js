@@ -25,7 +25,29 @@ export const getAllCategories = async (page, limit, search = "") => {
     };
   }
 };
+export const getAllCategorieFilter = async (page, limit, search = "") => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const token = user ? user.accessToken : null;
 
+    const response = await axios.get(`${API_URL}/category/filter`, {
+      params: { page, limit, search },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data.payload;
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return {
+      categories: [],
+      currentPage: 1,
+      totalPages: 1,
+      totalCategories: 0,
+    };
+  }
+};
 export const createCategory = async (formData) => {
   try {
     const user = JSON.parse(localStorage.getItem("user"));
