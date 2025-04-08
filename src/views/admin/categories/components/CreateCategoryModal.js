@@ -89,11 +89,6 @@ export default function CreateCategoryModal({
       valid = false;
     }
 
-    if (!newCategory.categoryParent) {
-      newErrors.categoryParent = "Vui lòng chọn danh mục cha.";
-      valid = false;
-    }
-
     setErrors(newErrors);
 
     if (!valid) return;
@@ -104,7 +99,7 @@ export default function CreateCategoryModal({
     formData.append("categoryName", newCategory.categoryName);
     formData.append("description", newCategory.description);
     formData.append("image", newCategory.image);
-    formData.append("categoryParent", newCategory.categoryParent);
+    formData.append("categoryParent", newCategory.categoryParent || "");
 
     try {
       const response = await createCategory(formData);
