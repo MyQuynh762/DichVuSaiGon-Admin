@@ -6,12 +6,13 @@ const getToken = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   return user ? user.accessToken : null;
 };
-// API lấy thông tin doanh thu cá nhân của nhân viên
+
+// ✅ 1. API lấy thông tin doanh thu theo khoảng ngày
 export const getRevenue = async (startDate, endDate) => {
   try {
     const token = getToken();
     const response = await axios.get(
-      `${API_URL}?startDate=${startDate}&endDate=${endDate}`,
+      `${API_URL}/revenue?startDate=${startDate}&endDate=${endDate}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -20,7 +21,23 @@ export const getRevenue = async (startDate, endDate) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching personal revenue:", error);
+    console.error("Error fetching revenue by date:", error);
+    throw error;
+  }
+};
+
+// ✅ 2. API lấy thống kê tổng quan hệ thống
+export const getSystemOverview = async () => {
+  try {
+    const token = getToken();
+    const response = await axios.get(`${API_URL}/overview`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching system overview:", error);
     throw error;
   }
 };

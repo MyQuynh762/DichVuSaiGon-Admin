@@ -99,6 +99,10 @@ export default function EditCategoryModal({
       valid = false;
     }
 
+    if (!editCategory.categoryParent) {
+      newErrors.categoryParent = "Vui lòng chọn danh mục cha.";
+      valid = false;
+    }
 
     setErrors(newErrors);
 
