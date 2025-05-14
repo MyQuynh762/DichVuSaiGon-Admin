@@ -17,6 +17,7 @@ import { createService } from "services/serviceService";
 import { getAllCategorieFilter } from "services/categoryService";
 import ReactQuill from "react-quill";
 import { getAllStores } from "services/storeService";
+import { getAllCategories } from "services/categoryService";
 
 const { TextArea } = Input;
 
@@ -47,7 +48,7 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const data = await getAllCategorieFilter(1, 1000);
+      const data = await getAllCategories(1, 1000);
       setCategories(data.categories || []);
     };
     fetchCategories();
@@ -201,30 +202,61 @@ export default function CreateServiceModal({ isOpen, onClose, fetchServices }) {
             </label>
             <Select
               placeholder="Chọn danh mục"
-              onChange={(value) =>
-                setNewService({ ...newService, categoryId: value })
-              }
+              onChange={(value) => setNewService({ ...newService, categoryId: value })}
               style={{ width: "100%", height: "40px" }}
               getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
               {categories.map((category) => (
-                <Select.Option key={category._id} value={category._id}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <img
-                      src={category.images} // Assuming category.categoryImage contains the image URL
-                      alt={category.categoryName}
-                      style={{
-                        width: "30px", // Resize image to fit nicely
-                        height: "30px",
-                        borderRadius: "50%", // Optional: makes the image circular
-                        marginRight: "10px",
-                      }}
-                    />
-                    <span>{category.categoryName}</span>
-                  </div>
-                </Select.Option>
+                <React.Fragment key={category._id}>
+                  {/* Danh mục cha */}
+                  <Select.Option value={category._id}>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <img
+                        src={category.images}
+                        alt={category.categoryName}
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                          marginRight: "10px",
+                          objectFit: "cover",
+                        }}
+                      />
+                      <span style={{ fontWeight: "bold" }}>{category.categoryName}</span>
+                    </div>
+                  </Select.Option>
+
+                  {/* Danh mục con (nếu có) */}
+                  {category.listCategory?.length > 0 &&
+                    category.listCategory.map((child) => (
+                      <Select.Option value={child._id} key={child._id}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            paddingLeft: "32px",
+                          }}
+                        >
+                          <img
+                            src={child.images}
+                            alt={child.categoryName}
+                            style={{
+                              width: "25px",
+                              height: "25px",
+                              borderRadius: "5px",
+                              marginRight: "10px",
+                              objectFit: "cover",
+                              opacity: 0.8,
+                            }}
+                          />
+                          <span>↳ {child.categoryName}</span>
+                        </div>
+                      </Select.Option>
+                    ))}
+                </React.Fragment>
               ))}
             </Select>
+
 
             {errors.categoryId && (
               <Text color="red.500" fontSize="sm">
