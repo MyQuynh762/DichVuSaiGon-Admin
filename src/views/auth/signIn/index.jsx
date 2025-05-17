@@ -27,7 +27,7 @@ function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
-  const illustration = "https://i.pinimg.com/736x/03/2f/4f/032f4f78a41408c0419fb3dcc975cf78.jpg";
+  const illustration = "https://res.cloudinary.com/dpucib9ge/image/upload/v1747493021/banner_hbjzll.jpg";
   const handleClick = () => setShow(!show);
 
   const handleSignIn = async (e) => {

@@ -64,7 +64,6 @@ function AuthIllustration(props) {
             w='100%'
             h='100%'
             bgSize='cover'
-            bgPosition='50%'
             position='absolute'
             borderBottomLeftRadius={{ lg: "120px", xl: "200px" }}></Flex>
         </Box>
