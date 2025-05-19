@@ -21,62 +21,67 @@ import { DatePicker } from "antd";
 import IconBox from "components/icons/IconBox";
 import React, { useEffect, useState } from "react";
 import {
-  MdAttachMoney,
   MdPeople,
   MdStore,
-  MdShoppingCart,
-  MdAssignment,
   MdCalendarToday,
+  MdAssignment,
 } from "react-icons/md";
-import { getRevenue, getSystemOverview } from "services/statisticalService";
+import {
+  getRevenue,
+  getSystemOverview,
+  getRevenueBySupplier,
+  getSystemOverviewBySupplier,
+} from "services/statisticalService";
 import { formatCurrency } from "utils/formatCurrency";
 import Card from "components/card/Card";
 import dayjs from "dayjs";
-import { over } from "lodash";
 
 const { RangePicker } = DatePicker;
 
 export default function UserReports() {
   const [overviewStats, setOverviewStats] = useState(null);
   const [statisticsTime, setStatisticsTime] = useState({ revenue: [] });
+  const [userRole, setUserRole] = useState(null);
 
   const [dateRange, setDateRange] = useState([
     dayjs().subtract(1, "day"),
     dayjs(),
   ]);
 
-  const fetchRevenueStatistics = async () => {
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    setUserRole(user?.user?.role || "admin");
+    fetchRevenueStatistics(user?.user?.role || "admin");
+  }, []);
+
+  const fetchRevenueStatistics = async (role) => {
     const startDate = dayjs(dateRange[0]).format("YYYY-MM-DD");
     const endDate = dayjs(dateRange[1]).format("YYYY-MM-DD");
 
     try {
-      const [overviewRes, revenueRes] = await Promise.all([
-        getSystemOverview(),
-        getRevenue(startDate, endDate),
-      ]);
-      console.log(overviewRes)
+      let overviewRes, revenueRes;
+
+      if (role === "supplier") {
+        [overviewRes, revenueRes] = await Promise.all([
+          getSystemOverviewBySupplier(),
+          getRevenueBySupplier(startDate, endDate),
+        ]);
+      } else {
+        [overviewRes, revenueRes] = await Promise.all([
+          getSystemOverview(),
+          getRevenue(startDate, endDate),
+        ]);
+      }
+
       setOverviewStats(overviewRes.payload);
-
-      const sortedRevenue = revenueRes.payload
-        .map((item) => ({
-          date: item._id.date, // flatten từ _id.date
-          storeId: item._id.storeId,
-          totalRevenue: item.totalRevenue,
-          totalBookings: item.totalBookings,
-        }))
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      setStatisticsTime({ revenue: sortedRevenue });
-
+      const sortedRevenue = revenueRes.payload.sort(
+        (a, b) => new Date(a._id.date || a._id) - new Date(b._id.date || b._id)
+      );
       setStatisticsTime({ revenue: sortedRevenue });
     } catch (error) {
       console.error("Lỗi khi lấy thống kê:", error);
     }
   };
-
-  useEffect(() => {
-    fetchRevenueStatistics();
-  }, []);
 
   const handleDateChange = (dates) => {
     setDateRange(dates || [dayjs(), dayjs()]);
@@ -89,14 +94,19 @@ export default function UserReports() {
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <SimpleGrid columns={{ base: 1, md: 2, lg: 4, "2xl": 4 }} gap="20px" mb="20px">
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon w="32px" h="32px" as={MdPeople} color={brandColor} />} />
-          }
-          name="Tổng khách hàng"
-          value={overviewStats?.customers?.total || 0}
-        />
+        {userRole !== "supplier" && (
+          <>
+            <MiniStatistics
+              startContent={
+                <IconBox w="56px" h="56px" bg={boxBg}
+                  icon={<Icon w="32px" h="32px" as={MdPeople} color={brandColor} />} />
+              }
+              name="Tổng khách hàng"
+              value={overviewStats?.customers?.total || 0}
+            />
+          </>
+        )}
+
         <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px" bg={boxBg}
@@ -121,17 +131,23 @@ export default function UserReports() {
           name="Tổng dịch vụ"
           value={overviewStats?.services?.total || 0}
         />
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon w="32px" h="32px" as={MdPeople} color={brandColor} />} />
-          }
-          name="Khách hàng mới"
-          unit="người"
-          value={overviewStats?.customers?.new || 0}
-          growth={overviewStats?.customers?.delta || 0}
-          content="so với tháng trước"
-        />
+
+        {userRole !== "supplier" && (
+          <>
+            <MiniStatistics
+              startContent={
+                <IconBox w="56px" h="56px" bg={boxBg}
+                  icon={<Icon w="32px" h="32px" as={MdPeople} color={brandColor} />} />
+              }
+              name="Khách hàng mới"
+              unit="người"
+              value={overviewStats?.customers?.new || 0}
+              growth={overviewStats?.customers?.delta || 0}
+              content="so với tháng trước"
+            />
+          </>
+        )}
+
         <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px" bg={boxBg}
@@ -170,7 +186,7 @@ export default function UserReports() {
       <Card direction="column" w="100%" px="25px" overflowX={{ sm: "scroll", lg: "hidden" }} mb="20px">
         <Flex justify="space-between" align="center" mb="20px">
           <RangePicker onChange={handleDateChange} value={dateRange} style={{ marginRight: "20px" }} />
-          <Button colorScheme="brand" onClick={fetchRevenueStatistics}>
+          <Button colorScheme="brand" onClick={() => fetchRevenueStatistics(userRole)}>
             Tính toán
           </Button>
         </Flex>
@@ -183,7 +199,7 @@ export default function UserReports() {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={statisticsTime?.revenue || []} margin={{ top: 10, right: 20, left: 40, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" /> {/* ✅ dùng "date" thay vì "_id" */}
+            <XAxis dataKey="_id.date" />
             <YAxis />
             <Tooltip
               labelFormatter={(label) => `Ngày: ${label}`}
@@ -191,7 +207,6 @@ export default function UserReports() {
             />
             <Line type="monotone" dataKey="totalRevenue" name="Doanh thu" stroke="#8884d8" activeDot={{ r: 8 }} />
           </LineChart>
-
         </ResponsiveContainer>
       </Card>
     </Box>
