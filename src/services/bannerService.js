@@ -8,11 +8,11 @@ const getAuthToken = () => {
 };
 
 // Lấy tất cả banner
-export const getAllBanners = async (page, limit) => {
+export const getAllBanners = async (page, limit, search) => {
   try {
     const token = getAuthToken();
     const response = await axios.get(`${API_URL}/banner`, {
-      params: { page, limit },
+      params: { page, limit, search },
       headers: {
         Authorization: `Bearer ${token}`,
       },
