@@ -99,11 +99,6 @@ export default function EditCategoryModal({
       valid = false;
     }
 
-    if (!editCategory.categoryParent) {
-      newErrors.categoryParent = "Vui lòng chọn danh mục cha.";
-      valid = false;
-    }
-
     setErrors(newErrors);
 
     if (!valid) return;
@@ -177,6 +172,7 @@ export default function EditCategoryModal({
               style={{ width: "100%", height: "40px" }}
               getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
+            <Option value="">Không có danh mục cha</Option>
               {categories.map((category) => (
                 <Option key={category._id} value={category._id}>
                   <div style={{ display: "flex", alignItems: "center" }}>

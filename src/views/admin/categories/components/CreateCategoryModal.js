@@ -11,10 +11,10 @@ import {
   Text,
 } from "@chakra-ui/react";
 import React, { useState, useEffect } from "react";
-import { Input, message, Select as AntdSelect } from "antd"; // Import Select từ antd
+import { Input, message, Select as AntdSelect } from "antd";
 import { createCategory, getAllCategories } from "services/categoryService";
 
-const { Option } = AntdSelect; // Lấy Option từ antd
+const { Option } = AntdSelect;
 
 export default function CreateCategoryModal({
   isOpen,
@@ -34,7 +34,6 @@ export default function CreateCategoryModal({
     categoryName: "",
     description: "",
     image: "",
-    categoryParent: "",
   });
 
   const [categories, setCategories] = useState([]);
@@ -43,7 +42,7 @@ export default function CreateCategoryModal({
     const fetchParentCategories = async () => {
       try {
         const parentCategories = await getAllCategories(1, 1000);
-        setCategories(parentCategories.categories); // Lưu danh sách các danh mục cha
+        setCategories(parentCategories.categories);
       } catch (error) {
         message.error("Lấy danh mục cha thất bại.");
       }
@@ -58,21 +57,24 @@ export default function CreateCategoryModal({
     const file = e.target.files[0];
     if (file) {
       if (file.size > MAX_IMAGE_SIZE) {
-        setErrors({ ...errors, image: "Vui lòng chọn hình ảnh nhỏ hơn 5MB." });
+        setErrors((prev) => ({
+          ...prev,
+          image: "Vui lòng chọn hình ảnh nhỏ hơn 5MB.",
+        }));
         return;
       }
-      setNewCategory({
-        ...newCategory,
+      setNewCategory((prev) => ({
+        ...prev,
         image: file,
         imagePreview: URL.createObjectURL(file),
-      });
-      setErrors({ ...errors, image: "" });
+      }));
+      setErrors((prev) => ({ ...prev, image: "" }));
     }
   };
 
   const handleSubmit = async () => {
     let valid = true;
-    const newErrors = { categoryName: "", description: "", image: "", categoryParent: "" };
+    const newErrors = { categoryName: "", description: "", image: "" };
 
     if (!newCategory.categoryName) {
       newErrors.categoryName = "Vui lòng nhập tên danh mục.";
@@ -89,22 +91,19 @@ export default function CreateCategoryModal({
       valid = false;
     }
 
-    if (!newCategory.categoryParent) {
-      newErrors.categoryParent = "Vui lòng chọn danh mục cha.";
-      valid = false;
-    }
-
     setErrors(newErrors);
-
     if (!valid) return;
 
     setLoading(true);
-
     const formData = new FormData();
     formData.append("categoryName", newCategory.categoryName);
     formData.append("description", newCategory.description);
     formData.append("image", newCategory.image);
-    formData.append("categoryParent", newCategory.categoryParent);
+
+    // Chỉ append nếu có categoryParent
+    if (newCategory.categoryParent) {
+      formData.append("categoryParent", newCategory.categoryParent);
+    }
 
     try {
       const response = await createCategory(formData);
@@ -143,7 +142,7 @@ export default function CreateCategoryModal({
               placeholder="Nhập tên danh mục"
               value={newCategory.categoryName}
               onChange={(e) =>
-                setNewCategory({ ...newCategory, categoryName: e.target.value })
+                setNewCategory((prev) => ({ ...prev, categoryName: e.target.value }))
               }
               style={{ height: "40px" }}
             />
@@ -163,7 +162,7 @@ export default function CreateCategoryModal({
               placeholder="Nhập mô tả"
               value={newCategory.description}
               onChange={(e) =>
-                setNewCategory({ ...newCategory, description: e.target.value })
+                setNewCategory((prev) => ({ ...prev, description: e.target.value }))
               }
               rows={4}
             />
@@ -179,14 +178,18 @@ export default function CreateCategoryModal({
               Chọn Danh mục Cha:
             </label>
             <AntdSelect
-              placeholder="Chọn danh mục cha"
-              value={newCategory.categoryParent}
+              placeholder="Chọn danh mục cha (không bắt buộc)"
+              value={newCategory.categoryParent || ""}
               onChange={(value) =>
-                setNewCategory({ ...newCategory, categoryParent: value })
+                setNewCategory((prev) => ({
+                  ...prev,
+                  categoryParent: value || null,
+                }))
               }
               style={{ width: "100%", height: "40px" }}
               getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
+              <Option value="">Không có danh mục cha</Option>
               {categories.map((category) => (
                 <Option key={category._id} value={category._id}>
                   <div style={{ display: "flex", alignItems: "center" }}>
@@ -202,11 +205,6 @@ export default function CreateCategoryModal({
                 </Option>
               ))}
             </AntdSelect>
-            {errors.categoryParent && (
-              <Text color="red.500" fontSize="sm">
-                {errors.categoryParent}
-              </Text>
-            )}
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -215,7 +213,7 @@ export default function CreateCategoryModal({
             </label>
             <Image
               src={newCategory.imagePreview || PLACEHOLDER_IMAGE}
-              alt="Category"
+              alt="Preview"
               boxSize="150px"
               objectFit="cover"
               mb={4}
@@ -237,7 +235,7 @@ export default function CreateCategoryModal({
         </ModalBody>
         <ModalFooter>
           <Button
-            colorScheme="brand"
+            colorScheme="blue"
             mr={3}
             onClick={handleSubmit}
             isLoading={loading}
